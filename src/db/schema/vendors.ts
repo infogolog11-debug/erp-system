@@ -16,7 +16,7 @@ export const vendors = pgTable("vendors",{
   nameAr:          text("name_ar"),
   code:            text("code").notNull(),
   vendorStatus:    vendorStatusEnum("vendor_status").default("pending").notNull(),
-  vendorType:      text("vendor_type").notNull(),
+  vendorType:      text("vendor_type").notNull(), // supplier|contractor|consultant|individual
   taxNumber:       text("tax_number"),
   registrationNo:  text("registration_no"),
   country:         text("country"),
@@ -27,6 +27,7 @@ export const vendors = pgTable("vendors",{
   website:         text("website"),
   preferredCurrencyId: uuid("preferred_currency_id").references(()=>currencies.id),
   paymentTermsDays:    integer("payment_terms_days").default(30),
+  // Scorecard
   overallScore:    decimal("overall_score",{precision:5,scale:2}).default("0"),
   totalOrders:     integer("total_orders").default(0),
   onTimeDelivery:  decimal("on_time_delivery",{precision:5,scale:2}).default("0"),
@@ -49,7 +50,7 @@ export const vendorCategories = pgTable("vendor_categories",{
   ...baseColumns,
   vendorId:       uuid("vendor_id").references(()=>vendors.id).notNull(),
   organizationId: uuid("organization_id").notNull(),
-  category:       text("category").notNull(),
+  category:       text("category").notNull(), // IT|Construction|Supplies|Consulting|etc
 });
 
 export const tenders = pgTable("tenders",{
@@ -79,20 +80,26 @@ export const tenderBids = pgTable("tender_bids",{
   financialScore: decimal("financial_score",{precision:5,scale:2}),
   totalScore:     decimal("total_score",{precision:5,scale:2}),
   isSealed:       boolean("is_sealed").default(true).notNull(),
-  sealedData:     text("sealed_data"),
+  sealedData:     text("sealed_data"), // encrypted until opening
   isAwarded:      boolean("is_awarded").default(false).notNull(),
 });
 
+// ══════════════════════════════════════════════════════
+// تقييم الموردين (Vendor Scorecard) — طبقة 1
+// ══════════════════════════════════════════════════════
 export const vendorRatings = pgTable("vendor_ratings",{
   ...baseColumns,
   organizationId:   uuid("organization_id").references(()=>organizations.id).notNull(),
   vendorId:         uuid("vendor_id").references(()=>vendors.id).notNull(),
+  // مرجع التقييم: GRN أو PO أو مستقل
   relatedPoId:      uuid("related_po_id"),
   relatedGrnId:     uuid("related_grn_id"),
   ratedBy:          uuid("rated_by").references(()=>users.id).notNull(),
-  qualityScore:     decimal("quality_score",{precision:3,scale:1}).notNull(),
-  deliveryScore:    decimal("delivery_score",{precision:3,scale:1}).notNull(),
-  complianceScore:  decimal("compliance_score",{precision:3,scale:1}).notNull(),
+  // المحاور الثلاثة (0-5)
+  qualityScore:     decimal("quality_score",{precision:3,scale:1}).notNull(),     // جودة البضائع/الخدمات
+  deliveryScore:    decimal("delivery_score",{precision:3,scale:1}).notNull(),    // الالتزام بوقت التسليم
+  complianceScore:  decimal("compliance_score",{precision:3,scale:1}).notNull(), // الامتثال للشروط
+  // المعدل المحسوب: (جودة×40% + توصيل×35% + امتثال×25%)
   weightedAverage:  decimal("weighted_average",{precision:4,scale:2}).notNull(),
   comments:         text("comments"),
   ratingDate:       timestamp("rating_date",{withTimezone:true}).default(sql`now()`).notNull(),
@@ -100,14 +107,17 @@ export const vendorRatings = pgTable("vendor_ratings",{
   vendorIdx: index("vr_vendor_idx").on(t.vendorId, t.organizationId),
 }));
 
+// ══════════════════════════════════════════════════════
+// تقييم عروض المناقصات (Bid Evaluation Committee) — طبقة 1
+// ══════════════════════════════════════════════════════
 export const bidEvaluationCriteria = pgTable("bid_evaluation_criteria",{
   ...baseColumns,
   organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
   tenderId:       uuid("tender_id").references(()=>tenders.id).notNull(),
-  criteriaName:   text("criteria_name").notNull(),
+  criteriaName:   text("criteria_name").notNull(),   // "السعر" | "المواصفات" | "وقت التسليم"
   criteriaNameAr: text("criteria_name_ar"),
-  weight:         integer("weight").notNull(),
-  maxScore:       integer("max_score").default(10),
+  weight:         integer("weight").notNull(),         // النسبة % (مجموعها يجب = 100)
+  maxScore:       integer("max_score").default(10),   // الدرجة القصوى
   sortOrder:      integer("sort_order").default(1),
 },(t)=>({ tenderIdx: index("bec_tender_idx").on(t.tenderId) }));
 
@@ -118,11 +128,11 @@ export const bidEvaluations = pgTable("bid_evaluations",{
   bidId:          uuid("bid_id").references(()=>tenderBids.id).notNull(),
   criteriaId:     uuid("criteria_id").references(()=>bidEvaluationCriteria.id).notNull(),
   evaluatorId:    uuid("evaluator_id").references(()=>users.id).notNull(),
-  score:          decimal("score",{precision:5,scale:2}).notNull(),
-  weightedScore:  decimal("weighted_score",{precision:6,scale:3}).notNull(),
+  score:          decimal("score",{precision:5,scale:2}).notNull(),        // الدرجة التي منحها المقيّم
+  weightedScore:  decimal("weighted_score",{precision:6,scale:3}).notNull(),// score × weight/100
   justification:  text("justification"),
   evaluatedAt:    timestamp("evaluated_at",{withTimezone:true}).default(sql`now()`).notNull(),
-  isLocked:       boolean("is_locked").default(false).notNull(),
+  isLocked:       boolean("is_locked").default(false).notNull(),            // مقفل بعد الإرسال
 },(t)=>({
   bidEvalIdx:  index("be_bid_idx").on(t.bidId, t.criteriaId),
   evalUserIdx: index("be_evaluator_idx").on(t.evaluatorId, t.tenderId),

@@ -7,6 +7,10 @@ import { organizations, users } from "./shared";
 import { grants } from "./grants";
 import { beneficiaries } from "./beneficiaries";
 
+// ═══════════════════════════════════════════════════════════════
+// CFM — Complaint & Feedback Mechanism (آلية الشكاوى والتغذية الراجعة)
+// ═══════════════════════════════════════════════════════════════
+
 export const complaintChannelEnum = pgEnum("complaint_channel", [
   "hotline","in_person","sms","email","suggestion_box","community_meeting","other",
 ]);
@@ -14,6 +18,7 @@ export const complaintCategoryEnum = pgEnum("complaint_category", [
   "service_quality","staff_conduct","corruption_fraud","sgbv_protection",
   "distribution_issue","eligibility_targeting","data_privacy","suggestion","other",
 ]);
+// شكاوى حساسة (حماية/SGBV/فساد) تتطلب صلاحية وصول مُقيَّدة ومسار تصعيد خاص
 export const complaintSensitivityEnum = pgEnum("complaint_sensitivity", ["standard","sensitive"]);
 export const complaintStatusEnum = pgEnum("complaint_status", [
   "received","under_review","investigating","resolved","closed","escalated",
@@ -36,11 +41,11 @@ export const complaints = pgTable("complaints",{
   complaintStatus: complaintStatusEnum("complaint_status").default("received").notNull(),
   priority:       complaintPriorityEnum("priority").default("medium").notNull(),
   receivedDate:   timestamp("received_date",{withTimezone:true}).default(sql`now()`).notNull(),
-  dueDate:        timestamp("due_date",{withTimezone:true}),
+  dueDate:        timestamp("due_date",{withTimezone:true}), // مهلة الاستجابة حسب SLA
   assignedTo:     uuid("assigned_to").references(()=>users.id),
   resolutionSummary: text("resolution_summary"),
   resolvedDate:   timestamp("resolved_date",{withTimezone:true}),
-  satisfactionRating: integer("satisfaction_rating"),
+  satisfactionRating: integer("satisfaction_rating"), // 1-5، يُجمَع من مقدّم الشكوى بعد الحل
 },(t)=>({
   orgIdx:  index("complaint_org_idx").on(t.organizationId),
   statusIdx: index("complaint_status_idx").on(t.complaintStatus),

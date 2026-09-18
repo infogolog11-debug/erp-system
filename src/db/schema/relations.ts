@@ -1,3 +1,5 @@
+// src/db/schema/relations.ts
+// تعريف علاقات Drizzle الصريحة لتفعيل db.query.X.findFirst/findMany({ with: {...} })
 import { relations } from "drizzle-orm";
 import {
   organizations, users, costCenters, currencies, fiscalYears, fiscalPeriods,
@@ -39,6 +41,7 @@ import {
   screeningRecords,
 } from "./screening";
 
+// ── shared ──────────────────────────────────────────────
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(users),
 }));
@@ -68,6 +71,7 @@ export const approvalDecisionsRelations = relations(approvalDecisions, ({ one })
   approver: one(users, { fields: [approvalDecisions.approverId], references: [users.id] }),
 }));
 
+// ── grants ──────────────────────────────────────────────
 export const donorsRelations = relations(donors, ({ many }) => ({
   grants: many(grants),
 }));
@@ -91,6 +95,7 @@ export const budgetAllocationsRelations = relations(budgetAllocations, ({ one })
   budgetLine: one(grantBudgetLines, { fields: [budgetAllocations.budgetLineId], references: [grantBudgetLines.id] }),
 }));
 
+// ── vendors ──────────────────────────────────────────────
 export const vendorsRelations = relations(vendors, ({ one, many }) => ({
   preferredCurrency: one(currencies, { fields: [vendors.preferredCurrencyId], references: [currencies.id] }),
   contacts:   many(vendorContacts),
@@ -138,6 +143,7 @@ export const bidEvaluationsRelations = relations(bidEvaluations, ({ one }) => ({
   evaluator: one(users, { fields: [bidEvaluations.evaluatorId], references: [users.id] }),
 }));
 
+// ── procurement ──────────────────────────────────────────
 export const purchaseRequestsRelations = relations(purchaseRequests, ({ one, many }) => ({
   requester:  one(users, { fields: [purchaseRequests.requestedBy], references: [users.id] }),
   department: one(costCenters, { fields: [purchaseRequests.departmentId], references: [costCenters.id] }),
@@ -210,6 +216,7 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   currency: one(currencies, { fields: [payments.currencyId], references: [currencies.id] }),
 }));
 
+// ── hr ──────────────────────────────────────────────────
 export const departmentsRelations = relations(departments, ({ one, many }) => ({
   organization: one(organizations, { fields: [departments.organizationId], references: [organizations.id] }),
   costCenter:   one(costCenters, { fields: [departments.costCenterId], references: [costCenters.id] }),
@@ -265,6 +272,7 @@ export const attendanceRelations = relations(attendance, ({ one }) => ({
   employee: one(employees, { fields: [attendance.employeeId], references: [employees.id] }),
 }));
 
+// ── inventory ───────────────────────────────────────────
 export const warehousesRelations = relations(warehouses, ({ one, many }) => ({
   manager: one(users, { fields: [warehouses.managerId], references: [users.id] }),
   stockMovements: many(stockMovements),
@@ -300,6 +308,7 @@ export const depreciationSchedulesRelations = relations(depreciationSchedules, (
   asset: one(assets, { fields: [depreciationSchedules.assetId], references: [assets.id] }),
 }));
 
+// ── accounting ──────────────────────────────────────────
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
   currency: one(currencies, { fields: [accounts.currencyId], references: [currencies.id] }),
   journalLines: many(journalLines),
@@ -318,6 +327,7 @@ export const journalLinesRelations = relations(journalLines, ({ one }) => ({
   grant:        one(grants, { fields: [journalLines.grantId], references: [grants.id] }),
 }));
 
+// ── fund accounting / fx ──────────────────────────────────
 export const exchangeRateHistoryRelations = relations(exchangeRateHistory, ({ one }) => ({
   currency: one(currencies, { fields: [exchangeRateHistory.currencyId], references: [currencies.id] }),
 }));
@@ -329,6 +339,7 @@ export const fxRevaluationsRelations = relations(fxRevaluations, ({ one }) => ({
   journalEntry: one(journalEntries, { fields: [fxRevaluations.journalEntryId], references: [journalEntries.id] }),
 }));
 
+// ── beneficiary management ────────────────────────────────
 export const beneficiariesRelations = relations(beneficiaries, ({ one, many }) => ({
   grant:           one(grants, { fields: [beneficiaries.grantId], references: [grants.id] }),
   verifier:        one(users, { fields: [beneficiaries.verifiedBy], references: [users.id] }),
@@ -358,6 +369,7 @@ export const distributionsRelations = relations(distributions, ({ one }) => ({
   distributor: one(users, { fields: [distributions.distributedBy], references: [users.id] }),
 }));
 
+// ── partner / sub-grant management ────────────────────────
 export const partnersRelations = relations(partners, ({ many }) => ({
   subGrants: many(subGrants),
 }));
@@ -380,6 +392,7 @@ export const partnerReportsRelations = relations(partnerReports, ({ one }) => ({
   reviewer: one(users, { fields: [partnerReports.reviewedBy], references: [users.id] }),
 }));
 
+// ── logistics / fleet management ──────────────────────────
 export const vehiclesRelations = relations(vehicles, ({ one, many }) => ({
   assignedDriver: one(drivers, { fields: [vehicles.assignedDriverId], references: [drivers.id] }),
   warehouse:      one(warehouses, { fields: [vehicles.warehouseId], references: [warehouses.id] }),
@@ -407,6 +420,7 @@ export const maintenanceRecordsRelations = relations(maintenanceRecords, ({ one 
   vendor:  one(vendors, { fields: [maintenanceRecords.vendorId], references: [vendors.id] }),
 }));
 
+// ── CFM (complaint & feedback mechanism) ──────────────────
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   beneficiary: one(beneficiaries, { fields: [complaints.beneficiaryId], references: [beneficiaries.id] }),
   grant:       one(grants, { fields: [complaints.grantId], references: [grants.id] }),
@@ -418,6 +432,7 @@ export const complaintUpdatesRelations = relations(complaintUpdates, ({ one }) =
   complaint: one(complaints, { fields: [complaintUpdates.complaintId], references: [complaints.id] }),
 }));
 
+// ── anti-terrorism / sanctions screening ──────────────────
 export const screeningRecordsRelations = relations(screeningRecords, ({ one }) => ({
   screenedByUser: one(users, { fields: [screeningRecords.screenedBy], references: [users.id] }),
 }));

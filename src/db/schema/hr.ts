@@ -1,13 +1,212 @@
-import {pgTable,text,boolean,uuid,integer,decimal,timestamp,index,pgEnum,jsonb} from "drizzle-orm/pg-core";import {baseColumns} from "./base";import {organizations,users,costCenters,currencies} from "./shared";import {grants,grantBudgetLines} from "./grants";
-export const genderEnum=pgEnum("gender",["male","female"]);export const contractTypeEnum=pgEnum("contract_type",["full_time","part_time","consultant","volunteer","intern"]);export const leaveTypeEnum=pgEnum("leave_type",["annual","sick","maternity","paternity","unpaid","emergency"]);
-export const departments=pgTable("departments",{...baseColumns,organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),name:text("name").notNull(),nameAr:text("name_ar"),code:text("code").notNull(),managerId:uuid("manager_id"),parentId:uuid("parent_id"),costCenterId:uuid("cost_center_id").references(()=>costCenters.id),isActive:boolean("is_active").default(true).notNull()});
-export const positions=pgTable("positions",{...baseColumns,organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),departmentId:uuid("department_id").references(()=>departments.id).notNull(),title:text("title").notNull(),titleAr:text("title_ar"),gradeLevel:integer("grade_level"),minSalary:decimal("min_salary",{precision:18,scale:2}),maxSalary:decimal("max_salary",{precision:18,scale:2}),isActive:boolean("is_active").default(true).notNull()});
-export const employees=pgTable("employees",{...baseColumns,organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),userId:uuid("user_id").references(()=>users.id),departmentId:uuid("department_id").references(()=>departments.id).notNull(),positionId:uuid("position_id").references(()=>positions.id).notNull(),managerId:uuid("manager_id"),code:text("code").unique().notNull(),firstName:text("first_name").notNull(),lastName:text("last_name").notNull(),firstNameAr:text("first_name_ar"),lastNameAr:text("last_name_ar"),gender:genderEnum("gender").notNull(),dateOfBirth:text("date_of_birth"),nationality:text("nationality"),nationalId:text("national_id"),passportNo:text("passport_no"),phone:text("phone"),email:text("email"),address:text("address"),hireDate:timestamp("hire_date",{withTimezone:true}).notNull(),terminationDate:timestamp("termination_date",{withTimezone:true}),bankName:text("bank_name"),bankAccount:text("bank_account"),bankIban:text("bank_iban"),isActive:boolean("is_active").default(true).notNull()},(t)=>({orgIdx:index("emp_org_idx").on(t.organizationId)}));
-export const contracts=pgTable("contracts",{...baseColumns,employeeId:uuid("employee_id").references(()=>employees.id).notNull(),organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),grantId:uuid("grant_id").references(()=>grants.id),budgetLineId:uuid("budget_line_id").references(()=>grantBudgetLines.id),contractType:contractTypeEnum("contract_type").notNull(),startDate:timestamp("start_date",{withTimezone:true}).notNull(),endDate:timestamp("end_date",{withTimezone:true}),baseSalary:decimal("base_salary",{precision:18,scale:2}).notNull(),currencyId:uuid("currency_id").references(()=>currencies.id).notNull(),workingHours:integer("working_hours").default(40),probationDays:integer("probation_days").default(90),isCurrent:boolean("is_current").default(true).notNull(),housingAllowance:decimal("housing_allowance",{precision:18,scale:2}),transportAllowance:decimal("transport_allowance",{precision:18,scale:2})});
-export const salaryComponents=pgTable("salary_components",{...baseColumns,organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),code:text("code").notNull(),name:text("name").notNull(),nameAr:text("name_ar"),componentType:text("component_type").notNull(),calculationMethod:text("calculation_method").notNull(),defaultValue:decimal("default_value",{precision:18,scale:2}),isTaxable:boolean("is_taxable").default(false),isActive:boolean("is_active").default(true).notNull()});
-export const payrollRuns=pgTable("payroll_runs",{...baseColumns,organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),periodName:text("period_name").notNull(),month:integer("month").notNull(),year:integer("year").notNull(),status:text("status").default("draft").notNull(),employeeCount:integer("employee_count").default(0),processedBy:uuid("processed_by").references(()=>users.id),processedAt:timestamp("processed_at",{withTimezone:true}),approvedBy:uuid("approved_by").references(()=>users.id),approvedAt:timestamp("approved_at",{withTimezone:true}),paidAt:timestamp("paid_at",{withTimezone:true}),totalGross:decimal("total_gross",{precision:18,scale:2}).default("0"),totalDeductions:decimal("total_deductions",{precision:18,scale:2}).default("0"),totalNet:decimal("total_net",{precision:18,scale:2}).default("0"),currencyId:uuid("currency_id").references(()=>currencies.id),journalEntryId:uuid("journal_entry_id"),notes:text("notes")},(t)=>({periodIdx:index("pr_period_idx").on(t.year,t.month),orgIdx:index("payroll_runs_org_idx").on(t.organizationId)}));
-export const payrollLines=pgTable("payroll_lines",{...baseColumns,payrollRunId:uuid("payroll_run_id").references(()=>payrollRuns.id).notNull(),employeeId:uuid("employee_id").references(()=>employees.id).notNull(),contractId:uuid("contract_id").references(()=>contracts.id).notNull(),organizationId:uuid("organization_id").notNull(),grantId:uuid("grant_id").references(()=>grants.id),budgetLineId:uuid("budget_line_id").references(()=>grantBudgetLines.id),workingDaysInMonth:integer("working_days_in_month").notNull().default(22),daysPresent:integer("days_present").notNull().default(0),daysAbsent:integer("days_absent").notNull().default(0),daysLeave:integer("days_leave").notNull().default(0),overtimeHours:decimal("overtime_hours",{precision:6,scale:2}).default("0"),baseSalary:decimal("base_salary",{precision:18,scale:2}).notNull(),adjustedBaseSalary:decimal("adjusted_base_salary",{precision:18,scale:2}).notNull(),housingAllowance:decimal("housing_allowance",{precision:12,scale:2}).default("0"),transportAllowance:decimal("transport_allowance",{precision:12,scale:2}).default("0"),performanceBonus:decimal("performance_bonus",{precision:12,scale:2}).default("0"),overtimePay:decimal("overtime_pay",{precision:12,scale:2}).default("0"),otherAllowances:decimal("other_allowances",{precision:12,scale:2}).default("0"),totalAllowances:decimal("total_allowances",{precision:18,scale:2}).default("0"),absentDeduction:decimal("absent_deduction",{precision:12,scale:2}).default("0"),incomeTax:decimal("income_tax",{precision:12,scale:2}).default("0"),socialSecurity:decimal("social_security",{precision:12,scale:2}).default("0"),loanDeduction:decimal("loan_deduction",{precision:12,scale:2}).default("0"),otherDeductions:decimal("other_deductions",{precision:12,scale:2}).default("0"),totalDeductions2:decimal("total_deductions",{precision:18,scale:2}).default("0"),grossSalary:decimal("gross_salary",{precision:18,scale:2}).notNull(),netSalary:decimal("net_salary",{precision:18,scale:2}).notNull(),paymentStatus:text("payment_status").default("pending"),isPaid:boolean("is_paid").default(false).notNull(),paidAt:timestamp("paid_at",{withTimezone:true}),notes:text("notes"),breakdown:jsonb("breakdown")},(t)=>({runIdx:index("pl_run_idx").on(t.payrollRunId),empIdx:index("pl_emp_idx").on(t.employeeId)}));
-export const payrollAdjustmentTypeEnum=pgEnum("payroll_adjustment_type",["bonus","deduction"]);
-export const payrollAdjustments=pgTable("payroll_adjustments",{...baseColumns,organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),employeeId:uuid("employee_id").references(()=>employees.id).notNull(),month:integer("month").notNull(),year:integer("year").notNull(),adjustmentType:payrollAdjustmentTypeEnum("adjustment_type").notNull(),amount:decimal("amount",{precision:12,scale:2}).notNull(),description:text("description").notNull(),createdBy:uuid("created_by").references(()=>users.id).notNull(),consumedInRunId:uuid("consumed_in_run_id")},(t)=>({periodIdx:index("padj_period_idx").on(t.organizationId,t.year,t.month),empIdx:index("padj_emp_idx").on(t.employeeId)}));
-export const leaveRequests=pgTable("leave_requests",{...baseColumns,employeeId:uuid("employee_id").references(()=>employees.id).notNull(),organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),leaveType:leaveTypeEnum("leave_type").notNull(),startDate:timestamp("start_date",{withTimezone:true}).notNull(),endDate:timestamp("end_date",{withTimezone:true}).notNull(),totalDays:decimal("total_days",{precision:5,scale:1}).notNull(),reason:text("reason"),approvedBy:uuid("approved_by").references(()=>users.id),approvedAt:timestamp("approved_at",{withTimezone:true})});
-export const attendance=pgTable("attendance",{...baseColumns,employeeId:uuid("employee_id").references(()=>employees.id).notNull(),organizationId:uuid("organization_id").references(()=>organizations.id).notNull(),workDate:text("work_date").notNull(),checkIn:timestamp("check_in",{withTimezone:true}),checkOut:timestamp("check_out",{withTimezone:true}),workedHours:decimal("worked_hours",{precision:5,scale:2}),overtimeHours:decimal("overtime_hours",{precision:5,scale:2}).default("0"),attendanceType:text("attendance_type").default("present")},(t)=>({empDateIdx:index("att_emp_date_idx").on(t.employeeId,t.workDate)}));
+import {
+  pgTable,text,boolean,uuid,integer,decimal,timestamp,date,index,pgEnum,jsonb
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { baseColumns } from "./base";
+import { organizations,users,costCenters,currencies } from "./shared";
+import { grants,grantBudgetLines } from "./grants";
+
+export const genderEnum  = pgEnum("gender",["male","female"]);
+export const contractTypeEnum = pgEnum("contract_type",["full_time","part_time","consultant","volunteer","intern"]);
+export const leaveTypeEnum = pgEnum("leave_type",["annual","sick","maternity","paternity","unpaid","emergency"]);
+
+export const departments = pgTable("departments",{
+  ...baseColumns,
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  name:           text("name").notNull(),
+  nameAr:         text("name_ar"),
+  code:           text("code").notNull(),
+  managerId:      uuid("manager_id"),
+  parentId:       uuid("parent_id"),
+  costCenterId:   uuid("cost_center_id").references(()=>costCenters.id),
+  isActive:       boolean("is_active").default(true).notNull(),
+});
+
+export const positions = pgTable("positions",{
+  ...baseColumns,
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  departmentId:   uuid("department_id").references(()=>departments.id).notNull(),
+  title:          text("title").notNull(),
+  titleAr:        text("title_ar"),
+  gradeLevel:     integer("grade_level"),
+  minSalary:      decimal("min_salary",{precision:18,scale:2}),
+  maxSalary:      decimal("max_salary",{precision:18,scale:2}),
+  isActive:       boolean("is_active").default(true).notNull(),
+});
+
+export const employees = pgTable("employees",{
+  ...baseColumns,
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  userId:         uuid("user_id").references(()=>users.id),
+  departmentId:   uuid("department_id").references(()=>departments.id).notNull(),
+  positionId:     uuid("position_id").references(()=>positions.id).notNull(),
+  managerId:      uuid("manager_id"),
+  code:           text("code").unique().notNull(),
+  firstName:      text("first_name").notNull(),
+  lastName:       text("last_name").notNull(),
+  firstNameAr:    text("first_name_ar"),
+  lastNameAr:     text("last_name_ar"),
+  gender:         genderEnum("gender").notNull(),
+  dateOfBirth:    text("date_of_birth"),
+  nationality:    text("nationality"),
+  nationalId:     text("national_id"),
+  passportNo:     text("passport_no"),
+  phone:          text("phone"),
+  email:          text("email"),
+  address:        text("address"),
+  hireDate:       timestamp("hire_date",{withTimezone:true}).notNull(),
+  terminationDate: timestamp("termination_date",{withTimezone:true}),
+  bankName:       text("bank_name"),
+  bankAccount:    text("bank_account"),
+  bankIban:       text("bank_iban"),
+  isActive:       boolean("is_active").default(true).notNull(),
+},(t)=>({ orgIdx: index("emp_org_idx").on(t.organizationId) }));
+
+export const contracts = pgTable("contracts",{
+  ...baseColumns,
+  employeeId:     uuid("employee_id").references(()=>employees.id).notNull(),
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  grantId:        uuid("grant_id").references(()=>grants.id),
+  budgetLineId:   uuid("budget_line_id").references(()=>grantBudgetLines.id),
+  contractType:   contractTypeEnum("contract_type").notNull(),
+  startDate:      timestamp("start_date",{withTimezone:true}).notNull(),
+  endDate:        timestamp("end_date",{withTimezone:true}),
+  baseSalary:     decimal("base_salary",{precision:18,scale:2}).notNull(),
+  currencyId:     uuid("currency_id").references(()=>currencies.id).notNull(),
+  workingHours:   integer("working_hours").default(40),
+  probationDays:  integer("probation_days").default(90),
+  isCurrent:      boolean("is_current").default(true).notNull(),
+  // تخصيص بدلات لكل عقد — NULL يعني استخدام القيمة الافتراضية من كتالوج salary_components
+  // (بدونها كان كل الموظفين يأخذون نفس بدل السكن/المواصلات بغض النظر عن العقد الفعلي)
+  housingAllowance:   decimal("housing_allowance",{precision:18,scale:2}),
+  transportAllowance: decimal("transport_allowance",{precision:18,scale:2}),
+});
+
+export const salaryComponents = pgTable("salary_components",{
+  ...baseColumns,
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  code:           text("code").notNull(),
+  name:           text("name").notNull(),
+  nameAr:         text("name_ar"),
+  componentType:  text("component_type").notNull(), // allowance | deduction | bonus
+  calculationMethod: text("calculation_method").notNull(), // fixed | percentage
+  defaultValue:   decimal("default_value",{precision:18,scale:2}),
+  isTaxable:      boolean("is_taxable").default(false),
+  isActive:       boolean("is_active").default(true).notNull(),
+});
+
+// ── مُطوَّر: أضفنا status + approvedBy + employeeCount (مدمج من nexus-erp) ──
+export const payrollRuns = pgTable("payroll_runs",{
+  ...baseColumns,
+  organizationId:  uuid("organization_id").references(()=>organizations.id).notNull(),
+  periodName:      text("period_name").notNull(),
+  month:           integer("month").notNull(),
+  year:            integer("year").notNull(),
+  status:          text("status").default("draft").notNull(), // draft|processing|approved|paid
+  employeeCount:   integer("employee_count").default(0),
+  processedBy:     uuid("processed_by").references(()=>users.id),
+  processedAt:     timestamp("processed_at",{withTimezone:true}),
+  approvedBy:      uuid("approved_by").references(()=>users.id),
+  approvedAt:      timestamp("approved_at",{withTimezone:true}),
+  paidAt:          timestamp("paid_at",{withTimezone:true}),
+  totalGross:      decimal("total_gross",{precision:18,scale:2}).default("0"),
+  totalDeductions: decimal("total_deductions",{precision:18,scale:2}).default("0"),
+  totalNet:        decimal("total_net",{precision:18,scale:2}).default("0"),
+  currencyId:      uuid("currency_id").references(()=>currencies.id),
+  journalEntryId:  uuid("journal_entry_id"),
+  notes:           text("notes"),
+},(t)=>({
+  periodIdx: index("pr_period_idx").on(t.year,t.month),
+  orgIdx:    index("payroll_runs_org_idx").on(t.organizationId),
+}));
+
+// ── مُطوَّر: تفاصيل الراتب كاملة (مدمج من nexus-erp) ──
+export const payrollLines = pgTable("payroll_lines",{
+  ...baseColumns,
+  payrollRunId:        uuid("payroll_run_id").references(()=>payrollRuns.id).notNull(),
+  employeeId:          uuid("employee_id").references(()=>employees.id).notNull(),
+  contractId:          uuid("contract_id").references(()=>contracts.id).notNull(),
+  organizationId:      uuid("organization_id").notNull(),
+  grantId:             uuid("grant_id").references(()=>grants.id),
+  budgetLineId:        uuid("budget_line_id").references(()=>grantBudgetLines.id),
+  // ─ بيانات الحضور ─
+  workingDaysInMonth:  integer("working_days_in_month").notNull().default(22),
+  daysPresent:         integer("days_present").notNull().default(0),
+  daysAbsent:          integer("days_absent").notNull().default(0),
+  daysLeave:           integer("days_leave").notNull().default(0),
+  overtimeHours:       decimal("overtime_hours",{precision:6,scale:2}).default("0"),
+  // ─ البدلات والمكونات ─
+  baseSalary:          decimal("base_salary",{precision:18,scale:2}).notNull(),
+  adjustedBaseSalary:  decimal("adjusted_base_salary",{precision:18,scale:2}).notNull(),
+  housingAllowance:    decimal("housing_allowance",{precision:12,scale:2}).default("0"),
+  transportAllowance:  decimal("transport_allowance",{precision:12,scale:2}).default("0"),
+  performanceBonus:    decimal("performance_bonus",{precision:12,scale:2}).default("0"),
+  overtimePay:         decimal("overtime_pay",{precision:12,scale:2}).default("0"),
+  otherAllowances:     decimal("other_allowances",{precision:12,scale:2}).default("0"),
+  totalAllowances:     decimal("total_allowances",{precision:18,scale:2}).default("0"),
+  // ─ الخصومات ─
+  absentDeduction:     decimal("absent_deduction",{precision:12,scale:2}).default("0"),
+  incomeTax:           decimal("income_tax",{precision:12,scale:2}).default("0"),
+  socialSecurity:      decimal("social_security",{precision:12,scale:2}).default("0"),
+  loanDeduction:       decimal("loan_deduction",{precision:12,scale:2}).default("0"),
+  otherDeductions:     decimal("other_deductions",{precision:12,scale:2}).default("0"),
+  totalDeductions:     decimal("total_deductions",{precision:18,scale:2}).default("0"),
+  // ─ الإجماليات ─
+  grossSalary:         decimal("gross_salary",{precision:18,scale:2}).notNull(),
+  netSalary:           decimal("net_salary",{precision:18,scale:2}).notNull(),
+  // ─ الدفع ─
+  paymentStatus:       text("payment_status").default("pending"), // pending|paid|on_hold
+  isPaid:              boolean("is_paid").default(false).notNull(),
+  paidAt:              timestamp("paid_at",{withTimezone:true}),
+  notes:               text("notes"),
+  breakdown:           jsonb("breakdown"), // snapshot كامل للحسبة
+},(t)=>({
+  runIdx: index("pl_run_idx").on(t.payrollRunId),
+  empIdx: index("pl_emp_idx").on(t.employeeId),
+}));
+
+// ── بونص/خصم لمرة واحدة لموظف محدد بدورة رواتب محددة ──────────────
+// (بدل الاعتماد على نفس القيمة الافتراضية بالكتالوج لكل الموظفين بكل دورة)
+export const payrollAdjustmentTypeEnum = pgEnum("payroll_adjustment_type", ["bonus","deduction"]);
+
+export const payrollAdjustments = pgTable("payroll_adjustments",{
+  ...baseColumns,
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  employeeId:     uuid("employee_id").references(()=>employees.id).notNull(),
+  month:          integer("month").notNull(), // 1-12، الشهر اللي رح يُطبَّق فيه
+  year:           integer("year").notNull(),
+  adjustmentType: payrollAdjustmentTypeEnum("adjustment_type").notNull(),
+  amount:         decimal("amount",{precision:12,scale:2}).notNull(),
+  description:    text("description").notNull(), // إلزامي — لازم سبب واضح لأي بونص/خصم
+  createdBy:      uuid("created_by").references(()=>users.id).notNull(),
+  // إذا استُخدم فعلياً بدورة رواتب مُعالجَة، نربطه بها (يمنع إعادة استخدامه لدورة تانية بالغلط)
+  consumedInRunId: uuid("consumed_in_run_id"),
+},(t)=>({
+  periodIdx: index("padj_period_idx").on(t.organizationId,t.year,t.month),
+  empIdx:    index("padj_emp_idx").on(t.employeeId),
+}));
+
+export const leaveRequests = pgTable("leave_requests",{
+  ...baseColumns,
+  employeeId:     uuid("employee_id").references(()=>employees.id).notNull(),
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  leaveType:      leaveTypeEnum("leave_type").notNull(),
+  startDate:      timestamp("start_date",{withTimezone:true}).notNull(),
+  endDate:        timestamp("end_date",{withTimezone:true}).notNull(),
+  totalDays:      decimal("total_days",{precision:5,scale:1}).notNull(),
+  reason:         text("reason"),
+  approvedBy:     uuid("approved_by").references(()=>users.id),
+  approvedAt:     timestamp("approved_at",{withTimezone:true}),
+});
+
+export const attendance = pgTable("attendance",{
+  ...baseColumns,
+  employeeId:     uuid("employee_id").references(()=>employees.id).notNull(),
+  organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
+  workDate:       text("work_date").notNull(),
+  checkIn:        timestamp("check_in",{withTimezone:true}),
+  checkOut:       timestamp("check_out",{withTimezone:true}),
+  workedHours:    decimal("worked_hours",{precision:5,scale:2}),
+  overtimeHours:  decimal("overtime_hours",{precision:5,scale:2}).default("0"),
+  attendanceType: text("attendance_type").default("present"), // present|absent|half_day|remote
+},(t)=>({ empDateIdx: index("att_emp_date_idx").on(t.employeeId,t.workDate) }));

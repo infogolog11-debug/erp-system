@@ -24,12 +24,14 @@ export const purchaseRequests = pgTable("purchase_requests",{
   estimatedTotal:  decimal("estimated_total",{precision:18,scale:2}),
   currencyId:      uuid("currency_id").references(()=>currencies.id),
   justification:   text("justification"),
+  // Budget check — يُحدَّث عند الموافقة
   budgetAvailable: decimal("budget_available",{precision:18,scale:2}),
-  budgetStatus:    text("budget_status"),
+  budgetStatus:    text("budget_status"), // sufficient | warning | exceeded
+  // ── مسار الشراء الطارئ — طبقة 1 ──────────────────────────────────────
   isEmergency:              boolean("is_emergency").default(false).notNull(),
-  emergencyReason:          text("emergency_reason"),
+  emergencyReason:          text("emergency_reason"),           // سبب الطوارئ (إلزامي إذا isEmergency)
   emergencyAuthorizedBy:    uuid("emergency_authorized_by").references(()=>users.id),
-  emergencyReviewDue:       timestamp("emergency_review_due",{withTimezone:true}),
+  emergencyReviewDue:       timestamp("emergency_review_due",{withTimezone:true}),  // + 30 يوم
   emergencyReviewedAt:      timestamp("emergency_reviewed_at",{withTimezone:true}),
   emergencyReviewNotes:     text("emergency_review_notes"),
 },(t)=>({ orgIdx: index("pr_org_idx").on(t.organizationId) }));
@@ -101,6 +103,13 @@ export const purchaseOrderItems = pgTable("purchase_order_items",{
   poId:           uuid("po_id").references(()=>purchaseOrders.id).notNull(),
   organizationId: uuid("organization_id").notNull(),
   prItemId:       uuid("pr_item_id").references(()=>purchaseRequestItems.id),
+  // إصلاح v32: لم يكن يوجد أي ربط بين بند أمر الشراء وكتالوج الأصناف
+  // المتتبَّعة بالمخزون (items) — itemDescription نص حر فقط. هذا كان
+  // السبب الجذري وراء "ما فيه كود يستلم بضاعة فعلياً": ما فيه شيء
+  // يُستلَم *إلى* أصلاً. الحقل اختياري (nullable) لأن كثير من بنود
+  // الشراء خدمات أو مشتريات لمرة واحدة لا تحتاج تتبّع مخزون (استشارات،
+  // إيجار، سفر...)، فقط البنود المرتبطة فعلياً بصنف مخزون تُحدَّث آلياً
+  // عند الاستلام.
   itemId:         uuid("item_id").references(()=>items.id),
   itemDescription: text("item_description").notNull(),
   unit:           text("unit").notNull(),
@@ -152,14 +161,15 @@ export const vendorInvoices = pgTable("vendor_invoices",{
   totalAmount:    decimal("total_amount",{precision:18,scale:2}).notNull(),
   paidAmount:     decimal("paid_amount",{precision:18,scale:2}).default("0"),
   currencyId:     uuid("currency_id").references(()=>currencies.id).notNull(),
-  journalEntryId: uuid("journal_entry_id"),
-  matchingStatus:     text("matching_status").default("pending").notNull(),
+  journalEntryId: uuid("journal_entry_id"), // ربط بالمحاسبة
+  // ── المطابقة الثلاثية (Layer 1) ──
+  matchingStatus:     text("matching_status").default("pending").notNull(), // pending|matched|discrepancy|overridden
   matchingCheckedAt:  timestamp("matching_checked_at",{withTimezone:true}),
   matchingCheckedBy:  uuid("matching_checked_by"),
-  poVarianceAmt:      decimal("po_variance_amt",{precision:18,scale:2}),
-  grnVarianceAmt:     decimal("grn_variance_amt",{precision:18,scale:2}),
+  poVarianceAmt:      decimal("po_variance_amt",{precision:18,scale:2}),       // فرق مع PO
+  grnVarianceAmt:     decimal("grn_variance_amt",{precision:18,scale:2}),      // فرق مع GRN
   discrepancyNotes:   text("discrepancy_notes"),
-  overrideReason:     text("override_reason"),
+  overrideReason:     text("override_reason"),    // تجاوز التعارض من مدير مخوّل
 });
 
 export const payments = pgTable("payments",{
@@ -172,7 +182,7 @@ export const payments = pgTable("payments",{
   paymentDate:    timestamp("payment_date",{withTimezone:true}).notNull(),
   amount:         decimal("amount",{precision:18,scale:2}).notNull(),
   currencyId:     uuid("currency_id").references(()=>currencies.id).notNull(),
-  paymentMethod:  text("payment_method").notNull(),
+  paymentMethod:  text("payment_method").notNull(), // bank_transfer|check|cash
   referenceNo:    text("reference_no"),
   journalEntryId: uuid("journal_entry_id"),
 });

@@ -1,0 +1,14 @@
+{
+  "name": "نظام ERP الإنساني",
+  "short_name": "ERP",
+  "description": "نظام إدارة مؤسساتي للمنظمات الإنسانية — يدعم العمل بدون اتصال إنترنت للتسجيل الميداني",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F17",
+  "theme_color": "#0F6E56",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

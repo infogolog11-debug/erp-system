@@ -10,8 +10,7 @@ async function runMigrations() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const client = await pool.connect();
 
-  console.log("🚀 بدء تشغيل الـ Migrations...
-");
+  console.log("🚀 بدء تشغيل الـ Migrations...\n");
 
   try {
     // إنشاء جدول تتبع الـ migrations
@@ -60,8 +59,7 @@ async function runMigrations() {
         await client.query(sql);
         await client.query("INSERT INTO _migrations (filename) VALUES ($1)", [file]);
         await client.query("COMMIT");
-        console.log(`✅ ${file} — تم بنجاح
-`);
+        console.log(`✅ ${file} — تم بنجاح\n`);
       } catch (e) {
         await client.query("ROLLBACK");
         throw new Error(`فشل ${file}: ${e}`);
@@ -69,8 +67,7 @@ async function runMigrations() {
     }
 
     console.log("═".repeat(50));
-    console.log("✅ جميع الـ Migrations تمت بنجاح!
-");
+    console.log("✅ جميع الـ Migrations تمت بنجاح!\n");
     console.log("الخطوة التالية: npx tsx src/db/seed.ts");
 
   } finally {

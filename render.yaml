@@ -1,7 +1,20 @@
 # ═══════════════════════════════════════════════════════════════
 # render.yaml — ERP System v39 (Hybrid Architecture: Render + Supabase)
 # ═══════════════════════════════════════════════════════════════
+# ملاحظات الخطة المجانية:
+#   • خطة التطبيق: Free — سوف تتوقف الخدمة بعد 15 دقيقة من عدم
+#     النشاط، وقد يستغرق الاستيقاظ 50 ثانية أو أكثر عند أول طلب.
+#   • لا يوجد أي قاعدة بيانات Render هنا — قاعدة البيانات على Supabase
+#   • DATABASE_URL تُعبأ يدوياً برابط Supabase وليس من fromDatabase
+#   • Cron Jobs منفصلة على خطة Free مع جدولة كل 3 أيام لمنع إيقاف
+#     Supabase المجاني (7 أيام حد أقصى للوقت السكوني)
+#   • متغيرات المصادقة: AUTH_* (next-auth v5) وليس NEXTAUTH_* (v4)
+# ═══════════════════════════════════════════════════════════════
+
 services:
+  # ─────────────────────────────────────────────────────────────
+  # التطبيق الرئيسي — Web Service على الخطة المجانية (Free)
+  # ─────────────────────────────────────────────────────────────
   - type: web
     name: erp-system
     runtime: node
@@ -10,10 +23,15 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
+      # قاعدة البيانات — رابط Supabase المباشر (يُعبأ يدوياً)
       - key: DATABASE_URL
         sync: false
+
+      # إعدادات Node والإنتاج
       - key: NODE_ENV
         value: production
+
+      # ── المصادقة (next-auth v5) ──
       - key: AUTH_SECRET
         generateValue: true
       - key: AUTH_URL
@@ -23,6 +41,8 @@ services:
           property: host
       - key: AUTH_TRUST_HOST
         value: "true"
+
+      # ── إعدادات التطبيق العامة ──
       - key: NEXT_PUBLIC_APP_URL
         fromService:
           name: erp-system
@@ -30,16 +50,24 @@ services:
           property: host
       - key: NEXT_PUBLIC_APP_NAME
         value: "نظام إدارة الموارد"
+
+      # ── البريد الإلكتروني (اختر واحداً: Resend أو SMTP) ──
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
         sync: false
+
+      # ── التنبيهات الأمنية والتشغيلية ──
       - key: SECURITY_ALERT_EMAIL
         sync: false
+
+      # ── تهيئة أولية للإنتاج (Seed) ──
       - key: SEED_ADMIN_EMAIL
         sync: false
       - key: SEED_ADMIN_PASSWORD
         sync: false
+
+      # ── التخزين (S3/R2) — اختياري ──
       - key: STORAGE_ENDPOINT
         sync: false
       - key: STORAGE_ACCESS_KEY
@@ -50,12 +78,22 @@ services:
         value: erp-documents
       - key: STORAGE_REGION
         value: auto
+
+      # ── المراقبة (Sentry/PostHog) — اختياري ──
       - key: SENTRY_DSN
         sync: false
       - key: NEXT_PUBLIC_SENTRY_DSN
         sync: false
       - key: NEXT_PUBLIC_POSTHOG_KEY
         sync: false
+
+
+  # ─────────────────────────────────────────────────────────────
+  # Cron Job 1: التحقق من سلامة سلسلة سجل التدقيق (audit:verify)
+  # ─────────────────────────────────────────────────────────────
+  # تشغيل: كل 3 أيام عند 3:00 صباحاً UTC
+  #    ^ (كل 3 أيام لأنه أقل من 7 أيام — لمنع إيقاف Supabase المجاني)
+  # الخطة: Free
   - type: cron
     name: erp-audit-integrity-check
     runtime: node
@@ -75,6 +113,14 @@ services:
         sync: false
       - key: SECURITY_ALERT_EMAIL
         sync: false
+
+
+  # ─────────────────────────────────────────────────────────────
+  # Cron Job 2: تسوية المخزون (stock:reconcile)
+  # ─────────────────────────────────────────────────────────────
+  # تشغيل: كل 3 أيام عند 3:30 صباحاً UTC (بعد مهمة التدقيق بنصف ساعة)
+  #    ^ (كل 3 أيام لأنه أقل من 7 أيام — لمنع إيقاف Supabase المجاني)
+  # الخطة: Free
   - type: cron
     name: erp-stock-reconcile
     runtime: node

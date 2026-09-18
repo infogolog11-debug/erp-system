@@ -1,0 +1,172 @@
+﻿node : (!) Your Vite config uses features that are unsupported by 
+`configLoader: 'native'`, which is planned to become the default in a future 
+major version of Vite:
+At line:1 char:114
++ ... O_COLOR="1" ; node .\node_modules\vitest\dist\cli.js run 2>&1 | Out-F ...
++                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((!) Your Vite c...ersion of Vite: 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a 
+`.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 E:/ERP system
+
+ Γ¥» src/modules/accounting/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/hr/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/beneficiaries/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/fleet/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/vendors/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/partners/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/procurement/__tests__/grn-actions.test.ts (0 test)
+ Γ¥» src/modules/vendors/__tests__/bid-score-actions.test.ts (0 test)
+ Γ¥» src/modules/procurement/__tests__/po-actions.test.ts (0 test)
+ Γ¥» src/modules/screening/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/beneficiaries/__tests__/distribution-actions.test.ts (0 test)
+ Γ¥» src/core/inventory/__tests__/reconcile-stock.test.ts (0 test)
+ Γ¥» src/lib/idempotency/__tests__/guard.test.ts (0 test)
+ Γ¥» src/modules/procurement/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/grants/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/cfm/__tests__/actions.test.ts (0 test)
+ Γ¥» src/core/audit/__tests__/scheduled-check.test.ts (0 test)
+ Γ¥» src/modules/settings/__tests__/actions.test.ts (0 test)
+ Γ¥» src/modules/inventory/__tests__/actions.test.ts (0 test)
+ Γ¥» src/lib/auth/__tests__/ownership.test.ts (0 test)
+ Γ¥» src/core/audit/__tests__/audit-trail.test.ts (0 test)
+ Γ¥» src/lib/auth/__tests__/guard.test.ts (0 test)
+ Γ¥» src/lib/security/__tests__/sanitize.test.ts (0 test)
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ» Failed Suites 23 ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+ FAIL  src/core/audit/__tests__/audit-trail.test.ts [ 
+src/core/audit/__tests__/audit-trail.test.ts ]
+ FAIL  src/core/audit/__tests__/scheduled-check.test.ts [ 
+src/core/audit/__tests__/scheduled-check.test.ts ]
+ FAIL  src/core/inventory/__tests__/reconcile-stock.test.ts [ 
+src/core/inventory/__tests__/reconcile-stock.test.ts ]
+ FAIL  src/lib/idempotency/__tests__/guard.test.ts [ 
+src/lib/idempotency/__tests__/guard.test.ts ]
+ FAIL  src/modules/accounting/__tests__/actions.test.ts [ 
+src/modules/accounting/__tests__/actions.test.ts ]
+ FAIL  src/modules/cfm/__tests__/actions.test.ts [ 
+src/modules/cfm/__tests__/actions.test.ts ]
+ FAIL  src/modules/beneficiaries/__tests__/actions.test.ts [ 
+src/modules/beneficiaries/__tests__/actions.test.ts ]
+ FAIL  src/modules/beneficiaries/__tests__/distribution-actions.test.ts [ 
+src/modules/beneficiaries/__tests__/distribution-actions.test.ts ]
+ FAIL  src/modules/fleet/__tests__/actions.test.ts [ 
+src/modules/fleet/__tests__/actions.test.ts ]
+ FAIL  src/modules/hr/__tests__/actions.test.ts [ 
+src/modules/hr/__tests__/actions.test.ts ]
+ FAIL  src/modules/grants/__tests__/actions.test.ts [ 
+src/modules/grants/__tests__/actions.test.ts ]
+ FAIL  src/modules/inventory/__tests__/actions.test.ts [ 
+src/modules/inventory/__tests__/actions.test.ts ]
+ FAIL  src/modules/procurement/__tests__/actions.test.ts [ 
+src/modules/procurement/__tests__/actions.test.ts ]
+ FAIL  src/modules/screening/__tests__/actions.test.ts [ 
+src/modules/screening/__tests__/actions.test.ts ]
+ FAIL  src/modules/partners/__tests__/actions.test.ts [ 
+src/modules/partners/__tests__/actions.test.ts ]
+ FAIL  src/modules/settings/__tests__/actions.test.ts [ 
+src/modules/settings/__tests__/actions.test.ts ]
+ FAIL  src/modules/vendors/__tests__/actions.test.ts [ 
+src/modules/vendors/__tests__/actions.test.ts ]
+ FAIL  src/modules/vendors/__tests__/bid-score-actions.test.ts [ 
+src/modules/vendors/__tests__/bid-score-actions.test.ts ]
+Error: Cannot find package 'drizzle-orm/pg-core' imported from E:/ERP 
+system/src/db/schema/base.ts
+ Γ¥» src/db/schema/base.ts:1:1
+      1| import { text, timestamp, boolean, uuid, pgEnum } from 
+"drizzle-orm/pgΓÇª
+       | ^
+      2| import { sql } from "drizzle-orm";
+      3|
+ Γ¥» src/db/schema/index.ts:4:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/23]ΓÄ»
+
+ FAIL  src/lib/auth/__tests__/guard.test.ts [ 
+src/lib/auth/__tests__/guard.test.ts ]
+Error: [vitest] There was an error when mocking a module. If you are using 
+"vi.mock" factory, make sure there are no top level variables inside, since 
+this call is hoisted to top of the file. Read more: 
+https://vitest.dev/api/vi.html#vi-mock
+ Γ¥» src/lib/auth/guard.ts:2:1
+      1| import { auth } from "@/auth";
+      2| import { getUserPermission, can, type ModuleCode, type 
+PermissionLevelΓÇª
+       | ^
+      3|
+      4| // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓ
+òÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò
+ÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+Caused by: Error: Cannot find package 'drizzle-orm/node-postgres' imported 
+from E:/ERP system/src/db/index.ts
+ Γ¥» src/db/index.ts:1:1
+ Γ¥» src/lib/permissions/service.ts:8:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[2/23]ΓÄ»
+
+ FAIL  src/lib/auth/__tests__/ownership.test.ts [ 
+src/lib/auth/__tests__/ownership.test.ts ]
+Error: Cannot find package 'drizzle-orm' imported from E:/ERP 
+system/src/lib/auth/ownership.ts
+ Γ¥» src/lib/auth/ownership.ts:2:1
+      1| import { db } from "@/db";
+      2| import { eq } from "drizzle-orm";
+       | ^
+      3| import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
+      4|
+ Γ¥» src/lib/auth/__tests__/ownership.test.ts:20:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[3/23]ΓÄ»
+
+ FAIL  src/lib/security/__tests__/sanitize.test.ts [ 
+src/lib/security/__tests__/sanitize.test.ts ]
+Error: Cannot find module 'E:\ERP system\node_modules\zod\v3\external.js' 
+imported from E:\ERP system\node_modules\zod\index.js
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[4/23]ΓÄ»
+
+ FAIL  src/modules/procurement/__tests__/grn-actions.test.ts [ 
+src/modules/procurement/__tests__/grn-actions.test.ts ]
+Error: Cannot find package 'drizzle-orm' imported from E:/ERP 
+system/src/lib/auth/ownership.ts
+ Γ¥» src/lib/auth/ownership.ts:2:1
+      1| import { db } from "@/db";
+      2| import { eq } from "drizzle-orm";
+       | ^
+      3| import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
+      4|
+ Γ¥» src/modules/procurement/actions.ts:15:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[5/23]ΓÄ»
+
+ FAIL  src/modules/procurement/__tests__/po-actions.test.ts [ 
+src/modules/procurement/__tests__/po-actions.test.ts ]
+Error: Cannot find package 'drizzle-orm' imported from E:/ERP 
+system/src/modules/procurement/actions.ts
+ Γ¥» src/modules/procurement/actions.ts:17:1
+     15| import { assertOwnedByOrg } from "@/lib/auth/ownership";
+     16| import { revalidatePath } from "next/cache";
+     17| import { eq, and, sql } from "drizzle-orm";
+       | ^
+     18| import { textField, optionalTextField } from 
+"@/lib/security/sanitize";
+     19| import { z } from "zod";
+ Γ¥» src/modules/procurement/__tests__/po-actions.test.ts:70:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[6/23]ΓÄ»
+
+
+ Test Files  23 failed | 11 passed (34)
+      Tests  94 passed (94)
+   Start at  20:30:39
+   Duration  14.64s (transform 12.89s, setup 0ms, import 3.30s, tests 371ms, environment 16ms)
+

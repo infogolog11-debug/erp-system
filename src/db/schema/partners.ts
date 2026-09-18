@@ -6,6 +6,10 @@ import { baseColumns } from "./base";
 import { organizations, users, currencies } from "./shared";
 import { grants } from "./grants";
 
+// ═══════════════════════════════════════════════════════════════
+// Partner / Sub-grant Management — الشركاء المنفّذون والمنح الفرعية
+// ═══════════════════════════════════════════════════════════════
+
 export const partnerTypeEnum = pgEnum("partner_type", [
   "local_ngo","international_ngo","government","community_based","private_sector","un_agency",
 ]);
@@ -25,8 +29,10 @@ export const partners = pgTable("partners",{
   contactPerson:  text("contact_person"),
   email:          text("email"),
   phone:          text("phone"),
+  // تقييم القدرات المؤسسية (Capacity Assessment) — 0-100
   capacityAssessmentScore: integer("capacity_assessment_score"),
   capacityAssessmentDate:  timestamp("capacity_assessment_date",{withTimezone:true}),
+  // الفحص المسبق (Due Diligence / Anti-Terrorism Screening الأساسي)
   dueDiligenceStatus: dueDiligenceStatusEnum("due_diligence_status").default("pending").notNull(),
   dueDiligenceNotes:  text("due_diligence_notes"),
   isActive:       boolean("is_active").default(true).notNull(),
@@ -66,7 +72,7 @@ export const subGrantDisbursements = pgTable("sub_grant_disbursements",{
   subGrantId:     uuid("sub_grant_id").references(()=>subGrants.id).notNull(),
   amount:         decimal("amount",{precision:18,scale:2}).notNull(),
   disbursementDate: timestamp("disbursement_date",{withTimezone:true}).default(sql`now()`).notNull(),
-  method:         text("method"),
+  method:         text("method"), // bank_transfer | cheque | cash
   referenceNumber: text("reference_number"),
   disbursementStatus: disbursementStatusEnum("disbursement_status").default("pending").notNull(),
   approvedBy:     uuid("approved_by").references(()=>users.id),
@@ -81,7 +87,7 @@ export const partnerReports = pgTable("partner_reports",{
   periodStart:    timestamp("period_start",{withTimezone:true}).notNull(),
   periodEnd:      timestamp("period_end",{withTimezone:true}).notNull(),
   narrativeReport: text("narrative_report"),
-  financialReportAmount: decimal("financial_report_amount",{precision:18,scale:2}),
+  financialReportAmount: decimal("financial_report_amount",{precision:18,scale:2}), // إجمالي الإنفاق المُبلَّغ عنه لهذه الفترة
   submittedDate:  timestamp("submitted_date",{withTimezone:true}).default(sql`now()`).notNull(),
   reviewStatus:   reportReviewStatusEnum("review_status").default("pending").notNull(),
   reviewedBy:     uuid("reviewed_by").references(()=>users.id),

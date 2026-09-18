@@ -8,6 +8,10 @@ import { grants } from "./grants";
 import { warehouses } from "./inventory";
 import { vendors } from "./vendors";
 
+// ═══════════════════════════════════════════════════════════════
+// Logistics / Fleet Management — المركبات، الوقود، الصيانة، بوليصة الشحن
+// ═══════════════════════════════════════════════════════════════
+
 export const vehicleTypeEnum = pgEnum("vehicle_type", ["pickup","truck","sedan","suv","motorcycle","bus","other"]);
 export const vehicleStatusEnum = pgEnum("vehicle_status", ["active","maintenance","inactive","disposed"]);
 
@@ -21,10 +25,10 @@ export const vehicles = pgTable("vehicles",{
   year:           integer("year"),
   vehicleType:    vehicleTypeEnum("vehicle_type").notNull(),
   vehicleStatus:  vehicleStatusEnum("vehicle_status").default("active").notNull(),
-  fuelType:       text("fuel_type").default("diesel"),
+  fuelType:       text("fuel_type").default("diesel"), // diesel | petrol | electric
   currentOdometer: integer("current_odometer").default(0).notNull(),
-  assignedDriverId: uuid("assigned_driver_id"),
-  warehouseId:    uuid("warehouse_id").references(()=>warehouses.id),
+  assignedDriverId: uuid("assigned_driver_id"), // FK إلى drivers، مُعرَّف أدناه
+  warehouseId:    uuid("warehouse_id").references(()=>warehouses.id), // موقع التمركز الأساسي
   nextServiceOdometer: integer("next_service_odometer"),
   nextServiceDate: timestamp("next_service_date",{withTimezone:true}),
 },(t)=>({ orgIdx: index("vehicle_org_idx").on(t.organizationId) }));
@@ -41,12 +45,13 @@ export const drivers = pgTable("drivers",{
 
 export const tripStatusEnum = pgEnum("trip_status", ["planned","in_progress","completed","cancelled"]);
 
+// بوليصة الشحن / رحلة النقل (Waybill)
 export const vehicleTrips = pgTable("vehicle_trips",{
   ...baseColumns,
   organizationId: uuid("organization_id").references(()=>organizations.id).notNull(),
   vehicleId:      uuid("vehicle_id").references(()=>vehicles.id).notNull(),
   driverId:       uuid("driver_id").references(()=>drivers.id).notNull(),
-  grantId:        uuid("grant_id").references(()=>grants.id),
+  grantId:        uuid("grant_id").references(()=>grants.id), // لتوزيع تكلفة النقل على المشروع
   waybillNumber:  text("waybill_number").unique().notNull(),
   purpose:        text("purpose").notNull(),
   origin:         text("origin").notNull(),
