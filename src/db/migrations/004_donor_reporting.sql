@@ -1,0 +1,1 @@
+ALTER TABLE "donors" ADD COLUMN IF NOT EXISTS "reporting_standard" text DEFAULT 'generic' NOT NULL;
