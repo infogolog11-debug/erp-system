@@ -1,0 +1,61 @@
+# ═══════════════════════════════════════════════════════════════
+# .dockerignore — تجاهل الملفات غير المطلوبة في صورة Docker
+# ═══════════════════════════════════════════════════════════════
+
+# الحزم والتبعيات المحلية
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ملفات بناء Next.js المحلية (سيُعاد بناؤها داخل Docker)
+.next
+out
+dist
+build
+
+# ملفات بيئة محلية (الأسرار)
+.env
+.env.local
+.env.development
+.env.test
+# ⚠️ احفظ: .env.production موجود في Git كمصدر للمتغيرات غير السرية
+#   لكن Secrets مثل DATABASE_URL تُضيف يدوياً في Render Env Vars
+
+# ملفات TypeScript المُصنّفة (TSBuildInfo)
+*.tsbuildinfo
+
+# ملفات اختبارات Vitest/Jest
+coverage
+.vitest
+__tests__
+
+# ملفات تحكم الإصدار المحلية
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+
+# مستندات Markdown وملفات تشخيصية
+README.md
+DEPLOYMENT_GUIDE.md
+deployment-guide.md
+SECURITY_NOTES.md
+final-checklist.md
+npm-install.log
+vitest-output.log
+full-output.log
+run-migration-seed.ps1
+run-migrations-direct.js
+run-seed-direct.js
+test-connection.js
+
+# ملفات التخزين المؤقت والـ Cache الآخر
+.cache
+.turbo
+.tmp
+temp
+
+# ملفات Sentry (اختيارية)
+.sentryclirc
