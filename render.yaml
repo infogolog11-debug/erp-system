@@ -1,0 +1,96 @@
+# ═══════════════════════════════════════════════════════════════
+# render.yaml — ERP System v39 (Hybrid Architecture: Render + Supabase)
+# ═══════════════════════════════════════════════════════════════
+services:
+  - type: web
+    name: erp-system
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: AUTH_URL
+        fromService:
+          name: erp-system
+          type: web
+          property: host
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      - key: NEXT_PUBLIC_APP_URL
+        fromService:
+          name: erp-system
+          type: web
+          property: host
+      - key: NEXT_PUBLIC_APP_NAME
+        value: "نظام إدارة الموارد"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SECURITY_ALERT_EMAIL
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_ACCESS_KEY
+        sync: false
+      - key: STORAGE_SECRET_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        value: erp-documents
+      - key: STORAGE_REGION
+        value: auto
+      - key: SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_POSTHOG_KEY
+        sync: false
+  - type: cron
+    name: erp-audit-integrity-check
+    runtime: node
+    region: oregon
+    plan: free
+    schedule: "0 3 */3 * *"
+    buildCommand: npm install
+    startCommand: npm run audit:verify
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SECURITY_ALERT_EMAIL
+        sync: false
+  - type: cron
+    name: erp-stock-reconcile
+    runtime: node
+    region: oregon
+    plan: free
+    schedule: "30 3 */3 * *"
+    buildCommand: npm install
+    startCommand: npm run stock:reconcile
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SECURITY_ALERT_EMAIL
+        sync: false
