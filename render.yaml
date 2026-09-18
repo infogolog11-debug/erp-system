@@ -21,7 +21,7 @@ services:
     region: oregon
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: npx --yes tsx src/db/migrations/run-migrations.ts && (npx --yes tsx src/db/seed-production.ts || true) && npm start
+    startCommand: node src/db/migrations/run-migrations.cjs && (node src/db/seed-production.cjs || true) && npm start
     envVars:
       # قاعدة البيانات — رابط Supabase المباشر (يُعبأ يدوياً)
       - key: DATABASE_URL
