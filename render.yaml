@@ -1,19 +1,22 @@
 # ═══════════════════════════════════════════════════════════════
-# render.yaml — ERP System v39 (Hybrid Architecture: Render + Supabase)
+# render.yaml — ERP System (Render + Supabase) — تحديث: 2026-09-19
 # ═══════════════════════════════════════════════════════════════
 # ملاحظات الخطة المجانية:
-#   • خطة التطبيق: Free — سوف تتوقف الخدمة بعد 15 دقيقة من عدم
-#     النشاط، وقد يستغرق الاستيقاظ 50 ثانية أو أكثر عند أول طلب.
-#   • لا يوجد أي قاعدة بيانات Render هنا — قاعدة البيانات على Supabase
-#   • DATABASE_URL تُعبأ يدوياً برابط Supabase وليس من fromDatabase
-#   • Cron Jobs منفصلة على خطة Free مع جدولة كل 3 أيام لمنع إيقاف
-#     Supabase المجاني (7 أيام حد أقصى للوقت السكوني)
-#   • متغيرات المصادقة: AUTH_* (next-auth v5) وليس NEXTAUTH_* (v4)
+#   • خطة التطبيق: Free — تتوقف الخدمة بعد 15 دقيقة من عدم
+#     النشاط، وقد يستغرق الاستيقاظ (Cold Start) ~50 ثانية عند أول طلب.
+#   • قاعدة البيانات: Supabase (PostgreSQL) — DATABASE_URL يُعبأ يدوياً
+#   • Cron Jobs: كل 3 أيام لمنع إيقاف Supabase المجاني (حد أقصى 7 أيام سكون)
+#   • متغيرات المصادقة: AUTH_* (next-auth v5) — وليس NEXTAUTH_* (v4)
+#
+# ⚠️  ملاحظة مهمة حول AUTH_URL و NEXT_PUBLIC_APP_URL:
+#   • بعد أول نشر ناجح والحصول على الرابط (مثل https://erp-system-xx.onrender.com)،
+#     عدّل القيمتين يدوياً ليكونا = الرابط الكامل مع https://
+#     ثم احفظ وانتظر إعادة التشغيل التلقائي للخدمة.
 # ═══════════════════════════════════════════════════════════════
 
 services:
   # ─────────────────────────────────────────────────────────────
-  # التطبيق الرئيسي — Web Service على الخطة المجانية (Free)
+  # التطبيق الرئيسي — Web Service (Node.js Runtime)
   # ─────────────────────────────────────────────────────────────
   - type: web
     name: erp-system
@@ -23,51 +26,43 @@ services:
     buildCommand: npm install && npm run build
     startCommand: node src/db/migrations/run-migrations.cjs && (node src/db/seed-production.cjs || true) && npm start
     envVars:
-      # قاعدة البيانات — رابط Supabase المباشر (يُعبأ يدوياً)
+      # ── 1. قاعدة البيانات (Supabase PostgreSQL) ──
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres:U0kJOCYez4WnIoDw@db.txlcfxfuiphwicpduccc.supabase.co:5432/postgres?sslmode=require
 
-      # إعدادات Node والإنتاج
+      # ── 2. إعدادات Node والإنتاج ──
       - key: NODE_ENV
         value: production
 
-      # ── المصادقة (next-auth v5) ──
+      # ── 3. المصادقة (next-auth v5) ──
       - key: AUTH_SECRET
-        generateValue: true
+        value: GIbjpeeN7i0iEBInnBXbarsPgxvVXjL4aLcnwrugnYU=
       - key: AUTH_URL
-        fromService:
-          name: erp-system
-          type: web
-          property: host
+        sync: false
       - key: AUTH_TRUST_HOST
         value: "true"
 
-      # ── إعدادات التطبيق العامة ──
+      # ── 4. إعدادات التطبيق العامة ──
       - key: NEXT_PUBLIC_APP_URL
-        fromService:
-          name: erp-system
-          type: web
-          property: host
+        sync: false
       - key: NEXT_PUBLIC_APP_NAME
         value: "نظام إدارة الموارد"
 
-      # ── البريد الإلكتروني (اختر واحداً: Resend أو SMTP) ──
+      # ── 5. تهيئة أولية للإنتاج (Seed — مستخدم المدير) ──
+      - key: SEED_ADMIN_EMAIL
+        value: admin@yourorg.com
+      - key: SEED_ADMIN_PASSWORD
+        value: "2ANRMNTWNPeyXr8w39iZW3EU!1A."
+
+      # ── 6. البريد الإلكتروني / التنبيهات (اختياري — اتركها فارغة حالياً) ──
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
         sync: false
-
-      # ── التنبيهات الأمنية والتشغيلية ──
       - key: SECURITY_ALERT_EMAIL
         sync: false
 
-      # ── تهيئة أولية للإنتاج (Seed) ──
-      - key: SEED_ADMIN_EMAIL
-        sync: false
-      - key: SEED_ADMIN_PASSWORD
-        sync: false
-
-      # ── التخزين (S3/R2) — اختياري ──
+      # ── 7. التخزين (S3/R2) — اختياري ──
       - key: STORAGE_ENDPOINT
         sync: false
       - key: STORAGE_ACCESS_KEY
@@ -79,7 +74,7 @@ services:
       - key: STORAGE_REGION
         value: auto
 
-      # ── المراقبة (Sentry/PostHog) — اختياري ──
+      # ── 8. المراقبة (Sentry/PostHog) — اختياري ──
       - key: SENTRY_DSN
         sync: false
       - key: NEXT_PUBLIC_SENTRY_DSN
@@ -89,11 +84,10 @@ services:
 
 
   # ─────────────────────────────────────────────────────────────
-  # Cron Job 1: التحقق من سلامة سلسلة سجل التدقيق (audit:verify)
+  # Cron Job 1 — التحقق من سلامة سلسلة سجل التدقيق (audit:verify)
   # ─────────────────────────────────────────────────────────────
-  # تشغيل: كل 3 أيام عند 3:00 صباحاً UTC
-  #    ^ (كل 3 أيام لأنه أقل من 7 أيام — لمنع إيقاف Supabase المجاني)
-  # الخطة: Free
+  # الجدول: كل 3 أيام عند الساعة 3:00 صباحاً UTC
+  #      └─ قبل مهمة تسوية المخزون بـ 30 دقيقة
   - type: cron
     name: erp-audit-integrity-check
     runtime: node
@@ -104,7 +98,7 @@ services:
     startCommand: npm run audit:verify
     envVars:
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres:U0kJOCYez4WnIoDw@db.txlcfxfuiphwicpduccc.supabase.co:5432/postgres?sslmode=require
       - key: NODE_ENV
         value: production
       - key: RESEND_API_KEY
@@ -116,11 +110,10 @@ services:
 
 
   # ─────────────────────────────────────────────────────────────
-  # Cron Job 2: تسوية المخزون (stock:reconcile)
+  # Cron Job 2 — تسوية أرصدة المخزون مقابل دفتر الحركات (stock:reconcile)
   # ─────────────────────────────────────────────────────────────
-  # تشغيل: كل 3 أيام عند 3:30 صباحاً UTC (بعد مهمة التدقيق بنصف ساعة)
-  #    ^ (كل 3 أيام لأنه أقل من 7 أيام — لمنع إيقاف Supabase المجاني)
-  # الخطة: Free
+  # الجدول: كل 3 أيام عند الساعة 3:30 صباحاً UTC
+  #      └─ بعد مهمة التدقيق بنصف ساعة
   - type: cron
     name: erp-stock-reconcile
     runtime: node
@@ -131,7 +124,7 @@ services:
     startCommand: npm run stock:reconcile
     envVars:
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres:U0kJOCYez4WnIoDw@db.txlcfxfuiphwicpduccc.supabase.co:5432/postgres?sslmode=require
       - key: NODE_ENV
         value: production
       - key: RESEND_API_KEY
