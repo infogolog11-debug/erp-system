@@ -16,7 +16,6 @@ RUN apk add --no-cache libc6-compat openssl
 
 # تعطيل قياس استخدم Next.js (اختياري)
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
 
 WORKDIR /app
 
@@ -25,14 +24,17 @@ WORKDIR /app
 # ═══════════════════════════════════════════════════════════════
 COPY package.json package-lock.json* ./
 
-# تثبيت جميع الحزم (devDeps مطلوبة لأن tsx و bcryptjs فيها)
-# استخدم --legacy-peer-deps لتجنب مشاكل توافق الحزم
+# تثبيت جميع الحزم (devDeps مطلوبة لأن typescript و tsx فيها)
+# 👈 مهم جداً: لا تضبط NODE_ENV=production قبل هذه الخطوة (تخطي devDeps)
 RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
 # ═══════════════════════════════════════════════════════════════
 # الخطوة 2: نسخ مصدر المشروع وبناء التطبيق
 # ═══════════════════════════════════════════════════════════════
 COPY . .
+
+# الآن نضبط NODE_ENV للإنتاج (بعد تثبيت devDeps وقبل البناء)
+ENV NODE_ENV production
 
 # تنفيذ عملية البناء
 RUN npm run build
