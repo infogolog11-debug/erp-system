@@ -15,16 +15,19 @@ export default function LoginPage() {
     setIsPending(true);
 
     try {
-      const res = await signIn("credentials", {
+      const res = (await signIn("credentials", {
         email,
         password,
+        redirect: false,
         callbackUrl: "/",
-      });
+      })) as { error?: string | null; url?: string | null } | undefined;
 
-      // عند النجاح ستتولى NextAuth إعادة التوجيه مباشرة.
       if (res?.error) {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        return;
       }
+
+      window.location.assign(res?.url ?? "/");
     } catch {
       setError("تعذر تسجيل الدخول حالياً، حاول مرة أخرى");
     } finally {
