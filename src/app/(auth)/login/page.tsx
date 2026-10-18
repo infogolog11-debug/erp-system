@@ -1,30 +1,39 @@
 // src/app/(auth)/login/page.tsx
 "use client";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    startTransition(async () => {
+    setIsPending(true);
+
+    try {
       const res = await signIn("credentials", {
-        email, password, redirect: false,
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/",
       });
+
       if (res?.error) {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
-      } else {
-        router.push("/");
-        router.refresh();
+        return;
       }
-    });
+
+      // نستخدم انتقالاً كاملاً حتى تلتقط طبقة الحماية الكوكي الجديدة فوراً.
+      window.location.href = res?.url ?? "/";
+    } catch {
+      setError("تعذر تسجيل الدخول حالياً، حاول مرة أخرى");
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
