@@ -45,7 +45,7 @@ async function seedProduction() {
     } else {
       const ins = await client.query(`
         INSERT INTO organizations
-          (name, "nameAr", code, email, "isActive", "createdBy")
+          (name, name_ar, code, email, is_active, created_by)
         VALUES ($1,$2,$3,$4,$5,$6)
         RETURNING id, name`,
         ["My Organization", "مؤسستي", "ORG-001", "info@myorg.com", true, "00000000-0000-0000-0000-000000000000"]
@@ -63,7 +63,7 @@ async function seedProduction() {
       console.warn("   ⚠️  تحذير: تستخدم كلمة مرور افتراضية!");
     }
     let usrRes = await client.query(
-      'SELECT id FROM users WHERE email = $1 AND "organizationId" = $2',
+      'SELECT id FROM users WHERE email = $1 AND organization_id = $2',
       [adminEmail, orgId]
     );
     let adminUserId;
@@ -74,8 +74,8 @@ async function seedProduction() {
       const passwordHash = await bcrypt.hash(adminPassword, 12);
       const ins = await client.query(`
         INSERT INTO users
-          ("organizationId", email, "passwordHash", "firstName", "lastName",
-           "firstNameAr", "lastNameAr", role, "isActive", "createdBy")
+          (organization_id, email, password_hash, first_name, last_name,
+           first_name_ar, last_name_ar, role, is_active, created_by)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
         RETURNING id, email`,
         [orgId, adminEmail, passwordHash, "Admin", "User",
@@ -98,8 +98,8 @@ async function seedProduction() {
     const insertedCurrencies = {};
     for (const c of currencyData) {
       const ex = await client.query(
-        'SELECT id FROM currencies WHERE code = $1 AND "organizationId" = $2',
-        [c.code, orgId]
+        'SELECT id FROM currencies WHERE code = $1',
+        [c.code]
       );
       if (ex.rows.length > 0) {
         insertedCurrencies[c.code] = ex.rows[0].id;
@@ -108,12 +108,10 @@ async function seedProduction() {
       }
       const ins = await client.query(`
         INSERT INTO currencies
-          (code, name, "nameAr", symbol, "exchangeRate", "isBase",
-           "organizationId", "isActive", "createdBy")
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          (code, name, name_ar, symbol, exchange_rate, is_base, is_active)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
         RETURNING id, code`,
-        [c.code, c.name, c.nameAr, c.symbol, c.exchangeRate, c.isBase,
-         orgId, true, adminUserId]
+        [c.code, c.name, c.nameAr, c.symbol, c.exchangeRate, c.isBase, true]
       );
       insertedCurrencies[c.code] = ins.rows[0].id;
       console.log(`   ✓ ${c.code} — ${c.nameAr}`);
@@ -133,7 +131,7 @@ async function seedProduction() {
     const insertedCC = {};
     for (const cc of ccData) {
       const ex = await client.query(
-        'SELECT id FROM "costCenters" WHERE code = $1 AND "organizationId" = $2',
+        'SELECT id FROM cost_centers WHERE code = $1 AND organization_id = $2',
         [cc.code, orgId]
       );
       if (ex.rows.length > 0) {
@@ -142,8 +140,8 @@ async function seedProduction() {
         continue;
       }
       const ins = await client.query(`
-        INSERT INTO "costCenters"
-          (code, name, "nameAr", "organizationId", "isActive", "createdBy")
+        INSERT INTO cost_centers
+          (code, name, name_ar, organization_id, is_active, created_by)
         VALUES ($1,$2,$3,$4,$5,$6)
         RETURNING id, code`,
         [cc.code, cc.name, cc.nameAr, orgId, true, adminUserId]
@@ -156,7 +154,7 @@ async function seedProduction() {
     // ─── 6. السنة المالية والفترات ───────────────
     console.log("6️⃣  إنشاء السنة المالية 2025...");
     let fyRes = await client.query(
-      'SELECT id FROM "fiscalYears" WHERE name = $1 AND "organizationId" = $2',
+      'SELECT id FROM fiscal_years WHERE name = $1 AND organization_id = $2',
       ["2025", orgId]
     );
     let fyId;
@@ -165,8 +163,8 @@ async function seedProduction() {
       console.log(`   ⏭  السنة المالية 2025 موجودة مسبقاً`);
     } else {
       const ins = await client.query(`
-        INSERT INTO "fiscalYears"
-          ("organizationId", name, "startDate", "endDate", "isClosed", "createdBy")
+        INSERT INTO fiscal_years
+          (organization_id, name, start_date, end_date, is_closed, created_by)
         VALUES ($1,$2,$3,$4,$5,$6)
         RETURNING id`,
         [orgId, "2025", new Date("2025-01-01"), new Date("2025-12-31"), false, adminUserId]
@@ -177,9 +175,9 @@ async function seedProduction() {
         const start = new Date(2025, m, 1);
         const end   = new Date(2025, m + 1, 0);
         await client.query(`
-          INSERT INTO "fiscalPeriods"
-            ("organizationId", "fiscalYearId", name, "periodNumber",
-             "startDate", "endDate", "isClosed", "createdBy")
+          INSERT INTO fiscal_periods
+            (organization_id, fiscal_year_id, name, period_number,
+             start_date, end_date, is_closed, created_by)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
           [orgId, fyId, `${MONTHS_AR[m]} 2025`, m + 1, start, end, false, adminUserId]
         );
@@ -216,14 +214,14 @@ async function seedProduction() {
     let accCount = 0;
     for (const acc of accountsData) {
       const ex = await client.query(
-        'SELECT id FROM accounts WHERE code = $1 AND "organizationId" = $2',
+        'SELECT id FROM accounts WHERE code = $1 AND organization_id = $2',
         [acc.code, orgId]
       );
       if (ex.rows.length > 0) { continue; }
       await client.query(`
         INSERT INTO accounts
-          (code, name, "nameAr", "accountType", "isControl",
-           "organizationId", "currencyId", "currentBalance", "isActive", "createdBy")
+          (code, name, name_ar, account_type, is_control,
+           organization_id, currency_id, current_balance, is_active, created_by)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [acc.code, acc.name, acc.nameAr, acc.accountType, acc.isControl,
          orgId, usdId, "0", true, adminUserId]
