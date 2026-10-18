@@ -20,8 +20,8 @@ export function parseThemePreference(value?: string | null): ThemePreference {
   return value === "light" || value === "system" ? value : DEFAULT_THEME;
 }
 
-export function getRequestPreferences(): AppPreferences {
-  const store = cookies();
+export async function getRequestPreferences(): Promise<AppPreferences> {
+  const store = await cookies();
   const locale = parseLocale(store.get("erp-locale")?.value);
 
   return {

@@ -7,9 +7,8 @@ export const metadata: Metadata = {
   description: "نظام إدارة مؤسساتي متكامل",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const prefs = getRequestPreferences();
-
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const prefs = await getRequestPreferences();
   return (
     <html
       lang={prefs.locale}

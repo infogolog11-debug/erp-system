@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session) redirect("/login");
-  const prefs = getRequestPreferences();
+  const prefs = await getRequestPreferences();
 
   return (
     <div className="flex h-screen bg-[#0B0F19] overflow-hidden" dir={prefs.direction}>

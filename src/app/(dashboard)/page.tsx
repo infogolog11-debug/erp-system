@@ -16,7 +16,7 @@ import { getRequestPreferences } from "@/lib/preferences";
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) return null;
-  const prefs   = getRequestPreferences();
+  const prefs   = await getRequestPreferences();
   const locale  = prefs.locale;
   const orgId   = session.user.organizationId;
   const userId  = session.user.id;
