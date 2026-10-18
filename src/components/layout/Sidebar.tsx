@@ -3,32 +3,33 @@ import Link        from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn }      from "@/lib/utils";
+import type { AppLocale } from "@/lib/preferences";
 
 const NAV_ITEMS = [
-  { label:"لوحة التحكم",   href:"/",             icon:"home",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },
-  { label:"المنح",          href:"/grants",        icon:"coins",         roles:["super_admin","admin","finance","viewer"] },
-  { label:"المستفيدون",     href:"/beneficiaries", icon:"users-group",   roles:["super_admin","admin","finance","viewer"] },
-  { label:"الشركاء المنفّذون", href:"/partners",   icon:"building-community", roles:["super_admin","admin","finance","viewer"] },
-  { label:"إدارة الأسطول",  href:"/logistics/fleet", icon:"truck", roles:["super_admin","admin","procurement","inventory","viewer"] },
-  { label:"الشكاوى والتغذية الراجعة", href:"/cfm", icon:"message-report", roles:["super_admin","admin","finance","hr","viewer"] },
-  { label:"الخريطة الجغرافية", href:"/reports/gis-map", icon:"map-pin", roles:["super_admin","admin","finance","viewer"] },
-  { label:"الموردون",       href:"/vendors",       icon:"truck",         roles:["super_admin","admin","finance","procurement","viewer"] },
-  { label:"المشتريات",      href:"/procurement",   icon:"shopping-cart", roles:["super_admin","admin","finance","procurement","viewer"] },
-  { label:"الموارد البشرية",href:"/hr",            icon:"users",         roles:["super_admin","admin","hr","viewer"] },
-  { label:"المخزون",        href:"/inventory",     icon:"package",       roles:["super_admin","admin","inventory","procurement","viewer"] },
-  { label:"المحاسبة",       href:"/accounting",    icon:"calculator",    roles:["super_admin","admin","finance","viewer"] },
-  { label:"الإشعارات",      href:"/notifications", icon:"bell",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },
-  { label:"التقارير",       href:"/reports",       icon:"chart-bar",     roles:["super_admin","admin","finance"] },
+  { label:{ ar:"لوحة التحكم", en:"Dashboard" },   href:"/",             icon:"home",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },
+  { label:{ ar:"المنح", en:"Grants" },          href:"/grants",        icon:"coins",         roles:["super_admin","admin","finance","viewer"] },
+  { label:{ ar:"المستفيدون", en:"Beneficiaries" },     href:"/beneficiaries", icon:"users-group",   roles:["super_admin","admin","finance","viewer"] },
+  { label:{ ar:"الشركاء المنفّذون", en:"Partners" }, href:"/partners",   icon:"building-community", roles:["super_admin","admin","finance","viewer"] },
+  { label:{ ar:"إدارة الأسطول", en:"Fleet" },  href:"/logistics/fleet", icon:"truck", roles:["super_admin","admin","procurement","inventory","viewer"] },
+  { label:{ ar:"الشكاوى والتغذية الراجعة", en:"Complaints & Feedback" }, href:"/cfm", icon:"message-report", roles:["super_admin","admin","finance","hr","viewer"] },
+  { label:{ ar:"الخريطة الجغرافية", en:"GIS Map" }, href:"/reports/gis-map", icon:"map-pin", roles:["super_admin","admin","finance","viewer"] },
+  { label:{ ar:"الموردون", en:"Vendors" },       href:"/vendors",       icon:"truck",         roles:["super_admin","admin","finance","procurement","viewer"] },
+  { label:{ ar:"المشتريات", en:"Procurement" },      href:"/procurement",   icon:"shopping-cart", roles:["super_admin","admin","finance","procurement","viewer"] },
+  { label:{ ar:"الموارد البشرية", en:"HR" },href:"/hr",            icon:"users",         roles:["super_admin","admin","hr","viewer"] },
+  { label:{ ar:"المخزون", en:"Inventory" },        href:"/inventory",     icon:"package",       roles:["super_admin","admin","inventory","procurement","viewer"] },
+  { label:{ ar:"المحاسبة", en:"Accounting" },       href:"/accounting",    icon:"calculator",    roles:["super_admin","admin","finance","viewer"] },
+  { label:{ ar:"الإشعارات", en:"Notifications" },      href:"/notifications", icon:"bell",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },
+  { label:{ ar:"التقارير", en:"Reports" },       href:"/reports",       icon:"chart-bar",     roles:["super_admin","admin","finance"] },
   {
-    label:"الإعدادات", href:"/settings", icon:"settings-2",
+    label:{ ar:"الإعدادات", en:"Settings" }, href:"/settings", icon:"settings-2",
     roles:["super_admin","admin"],
     children:[
-      { label:"إعدادات النظام",    href:"/settings",                 icon:"adjustments" },
-      { label:"البيانات الأساسية", href:"/settings/master-data",     icon:"database" },
-      { label:"مصفوفة التواقيع",   href:"/settings/approval-matrix", icon:"shield-check" },
-      { label:"المستخدمون",        href:"/settings/users",           icon:"user-cog" },
-      { label:"السنة المالية",     href:"/settings/fiscal-year",     icon:"calendar-stats" },
-      { label:"الصلاحيات",          href:"/settings/permissions",     icon:"shield-lock" },
+      { label:{ ar:"إعدادات النظام", en:"System Settings" },    href:"/settings",                 icon:"adjustments" },
+      { label:{ ar:"البيانات الأساسية", en:"Master Data" }, href:"/settings/master-data",     icon:"database" },
+      { label:{ ar:"مصفوفة التواقيع", en:"Approval Matrix" },   href:"/settings/approval-matrix", icon:"shield-check" },
+      { label:{ ar:"المستخدمون", en:"Users" },        href:"/settings/users",           icon:"user-cog" },
+      { label:{ ar:"السنة المالية", en:"Fiscal Year" },     href:"/settings/fiscal-year",     icon:"calendar-stats" },
+      { label:{ ar:"الصلاحيات", en:"Permissions" },          href:"/settings/permissions",     icon:"shield-lock" },
     ],
   },
 ] as const;
@@ -37,7 +38,7 @@ function NavIcon({ name }: { name:string }) {
   return <i className={`ti ti-${name} text-[17px] shrink-0`} aria-hidden="true" />;
 }
 
-export default function Sidebar({ role }: { role:string }) {
+export default function Sidebar({ role, locale }: { role:string; locale: AppLocale }) {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string|null>(
     pathname.startsWith("/settings") ? "/settings" : null
@@ -59,7 +60,7 @@ export default function Sidebar({ role }: { role:string }) {
               <circle cx="14" cy="13" r="2" fill="white"/>
             </svg>
           </div>
-          <span className="font-semibold text-white text-sm tracking-tight">نظام الإدارة</span>
+          <span className="font-semibold text-white text-sm tracking-tight">{locale === "ar" ? "نظام الإدارة" : "Management System"}</span>
         </div>
       </div>
 
@@ -85,7 +86,7 @@ export default function Sidebar({ role }: { role:string }) {
                       : "text-[#6B7280] hover:text-[#D1D5DB] hover:bg-[#1F2937]/60"
                   )}>
                   <NavIcon name={item.icon} />
-                  <span className="flex-1 text-right">{item.label}</span>
+                  <span className="flex-1 text-right">{item.label[locale]}</span>
                   <i className={`ti ti-chevron-${isGroupOpen ? "up" : "down"} text-[13px] transition-transform`} />
                 </button>
                 {isGroupOpen && (
@@ -101,7 +102,7 @@ export default function Sidebar({ role }: { role:string }) {
                               : "text-[#4B5563] hover:text-[#D1D5DB] hover:bg-[#1F2937]/60"
                           )}>
                           <i className={`ti ti-${child.icon ?? "circle"} text-[13px]`} />
-                          {child.label}
+                          {child.label[locale]}
                         </Link>
                       );
                     })}
@@ -120,7 +121,7 @@ export default function Sidebar({ role }: { role:string }) {
                   : "text-[#6B7280] hover:text-[#D1D5DB] hover:bg-[#1F2937]/60"
               )}>
               <NavIcon name={item.icon} />
-              <span>{item.label}</span>
+              <span>{item.label[locale]}</span>
               {isActive && <div className="mr-auto w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />}
             </Link>
           );
@@ -132,7 +133,7 @@ export default function Sidebar({ role }: { role:string }) {
         <Link href="/api/auth/signout"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#6B7280] hover:text-[#EF4444] hover:bg-[#2A1215]/60 transition-all">
           <i className="ti ti-logout text-[18px]" aria-hidden="true" />
-          <span>تسجيل الخروج</span>
+          <span>{locale === "ar" ? "تسجيل الخروج" : "Sign out"}</span>
         </Link>
       </div>
     </aside>

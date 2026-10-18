@@ -11,10 +11,13 @@ import Link from "next/link";
 import StatCard        from "@/components/dashboard/StatCard";
 import BudgetWidget    from "@/components/dashboard/BudgetWidget";
 import PendingApprovals from "@/components/dashboard/PendingApprovals";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const prefs   = getRequestPreferences();
+  const locale  = prefs.locale;
   const orgId   = session.user.organizationId;
   const userId  = session.user.id;
   const role    = session.user.role;
@@ -97,11 +100,69 @@ export default async function DashboardPage() {
     ? `${(n/1_000_000).toFixed(1)}M`
     : n >= 1_000 ? `${(n/1_000).toFixed(0)}K` : String(n);
 
+  const t = locale === "ar"
+    ? {
+        hello: "مرحباً",
+        totalGrantSpend: "الإنفاق الكلي للمنح",
+        spent: "منفق",
+        planned: "مخطط",
+        activeGrants: "منح نشطة",
+        pendingRequests: "طلبات معلقة",
+        activeEmployees: "موظفون نشطون",
+        approvedVendors: "موردون معتمدون",
+        requestsThisMonth: "طلب هذا الشهر",
+        payrollPending: "كشف بانتظار اعتماد",
+        blockedInvoice: "فاتورة محجوبة",
+        recentRequests: "آخر الطلبات",
+        noRequests: "لا توجد طلبات بعد",
+        noGrant: "بدون منحة",
+        quickActions: "إجراءات سريعة",
+        newPurchaseRequest: "طلب شراء جديد",
+        addVendor: "إضافة مورد",
+        processPayroll: "معالجة الرواتب",
+        systemSettings: "إعدادات النظام",
+        approvalMatrix: "مصفوفة التواقيع",
+        draft: "مسودة",
+        submitted: "معلق",
+        approved: "معتمد",
+        rejected: "مرفوض",
+        done: "منجز",
+        viewAll: "عرض الكل",
+      }
+    : {
+        hello: "Hello",
+        totalGrantSpend: "Total grant spending",
+        spent: "spent",
+        planned: "planned",
+        activeGrants: "Active grants",
+        pendingRequests: "Pending requests",
+        activeEmployees: "Active employees",
+        approvedVendors: "Approved vendors",
+        requestsThisMonth: "requests this month",
+        payrollPending: "payroll pending approval",
+        blockedInvoice: "blocked invoices",
+        recentRequests: "Recent requests",
+        noRequests: "No requests yet",
+        noGrant: "No grant",
+        quickActions: "Quick actions",
+        newPurchaseRequest: "New purchase request",
+        addVendor: "Add vendor",
+        processPayroll: "Process payroll",
+        systemSettings: "System settings",
+        approvalMatrix: "Approval matrix",
+        draft: "Draft",
+        submitted: "Pending",
+        approved: "Approved",
+        rejected: "Rejected",
+        done: "Done",
+        viewAll: "View all",
+      };
+
   const kpis = [
-    { label:"منح نشطة",           value: activeGrants[0].c,   icon:"ti-coins",          color:"teal",   href:"/grants",      sub:`${fmt(totalPlanned)} USD مخطط` },
-    { label:"طلبات معلقة",        value: pendingPRs[0].c,     icon:"ti-clipboard-list", color:"amber",  href:"/procurement", sub:`${thisMonthPRs[0].c} طلب هذا الشهر` },
-    { label:"موظفون نشطون",       value: totalEmployees[0].c, icon:"ti-users",          color:"blue",   href:"/hr",          sub:`${pendingPayroll[0].c} كشف بانتظار اعتماد` },
-    { label:"موردون معتمدون",     value: vendorCount[0].c,    icon:"ti-truck",          color:"purple", href:"/vendors",     sub:`${blockedInvoices[0].c} فاتورة محجوبة` },
+    { label:t.activeGrants,       value: activeGrants[0].c,   icon:"ti-coins",          color:"teal",   href:"/grants",      sub:`${fmt(totalPlanned)} USD ${t.planned}` },
+    { label:t.pendingRequests,    value: pendingPRs[0].c,     icon:"ti-clipboard-list", color:"amber",  href:"/procurement", sub:`${thisMonthPRs[0].c} ${t.requestsThisMonth}` },
+    { label:t.activeEmployees,    value: totalEmployees[0].c, icon:"ti-users",          color:"blue",   href:"/hr",          sub:`${pendingPayroll[0].c} ${t.payrollPending}` },
+    { label:t.approvedVendors,    value: vendorCount[0].c,    icon:"ti-truck",          color:"purple", href:"/vendors",     sub:`${blockedInvoices[0].c} ${t.blockedInvoice}` },
   ];
 
   // تنبيهات ذات أولوية
@@ -119,16 +180,16 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-semibold text-white">
-            مرحباً، {session.user.nameAr ?? session.user.firstName ?? ""} 👋
+            {t.hello}، {session.user.nameAr ?? session.user.firstName ?? ""} 👋
           </h1>
           <p className="text-sm text-[#6B7280] mt-1">
-            {now.toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" })}
+            {now.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })}
           </p>
         </div>
         {/* شريط الإنفاق الكلي */}
         <div className="bg-[#0F1117] border border-[#1F2937] rounded-xl px-5 py-3 min-w-[240px]">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-[#6B7280]">الإنفاق الكلي للمنح</span>
+            <span className="text-xs text-[#6B7280]">{t.totalGrantSpend}</span>
             <span className={`text-xs font-semibold tabular-nums ${spendPct>=95?"text-[#E24B4A]":spendPct>=80?"text-[#EF9F27]":"text-[#1D9E75]"}`}>
               {spendPct.toFixed(1)}%
             </span>
@@ -140,8 +201,8 @@ export default async function DashboardPage() {
             }} />
           </div>
           <div className="flex justify-between mt-1.5">
-            <span className="text-[10px] text-[#4B5563]">{fmt(totalSpent)} USD منفق</span>
-            <span className="text-[10px] text-[#4B5563]">{fmt(totalPlanned)} USD مخطط</span>
+            <span className="text-[10px] text-[#4B5563]">{fmt(totalSpent)} USD {t.spent}</span>
+            <span className="text-[10px] text-[#4B5563]">{fmt(totalPlanned)} USD {t.planned}</span>
           </div>
         </div>
       </div>
@@ -172,14 +233,14 @@ export default async function DashboardPage() {
       {/* الصف الثاني */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-5">
-          <BudgetWidget organizationId={orgId} />
+          <BudgetWidget organizationId={orgId} locale={locale} />
           {/* النشاط الأخير */}
           <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#1F2937]">
               <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                <i className="ti ti-activity text-[#0F6E56]" />آخر الطلبات
+                  <i className="ti ti-activity text-[#0F6E56]" />{t.recentRequests}
               </h2>
-              <Link href="/procurement" className="text-xs text-[#0F6E56] hover:text-[#1D9E75]">عرض الكل</Link>
+                <Link href="/procurement" className="text-xs text-[#0F6E56] hover:text-[#1D9E75]">{t.viewAll}</Link>
             </div>
             <div className="divide-y divide-[#1F2937]">
               {recentPRs.map(pr => {
@@ -188,7 +249,7 @@ export default async function DashboardPage() {
                   approved:"text-[#1D9E75]", rejected:"text-[#E24B4A]", done:"text-[#6B7280]",
                 };
                 const STATUS_LABEL: Record<string,string> = {
-                  draft:"مسودة", submitted:"معلق", approved:"معتمد", rejected:"مرفوض", done:"منجز",
+                  draft:t.draft, submitted:t.submitted, approved:t.approved, rejected:t.rejected, done:t.done,
                 };
                 return (
                   <Link key={pr.id} href={`/procurement/requests/${pr.id}`}
@@ -198,21 +259,21 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[#D1D5DB] truncate">{pr.title}</p>
-                      <p className="text-[11px] text-[#4B5563] mt-0.5">{pr.grant?.name ?? "بدون منحة"} · {pr.code}</p>
+                      <p className="text-[11px] text-[#4B5563] mt-0.5">{pr.grant?.name ?? t.noGrant} · {pr.code}</p>
                     </div>
                     <div className="text-left shrink-0">
                       <p className={`text-xs font-medium ${STATUS_COLOR[pr.status] ?? "text-[#6B7280]"}`}>
                         ● {STATUS_LABEL[pr.status] ?? pr.status}
                       </p>
                       <p className="text-[10px] text-[#4B5563] mt-0.5">
-                        {new Date(pr.createdAt).toLocaleDateString("ar")}
+                        {new Date(pr.createdAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")}
                       </p>
                     </div>
                   </Link>
                 );
               })}
               {recentPRs.length === 0 && (
-                <p className="text-sm text-[#4B5563] text-center py-8">لا توجد طلبات بعد</p>
+                <p className="text-sm text-[#4B5563] text-center py-8">{t.noRequests}</p>
               )}
             </div>
           </div>
@@ -220,19 +281,19 @@ export default async function DashboardPage() {
 
         {/* العمود الجانبي */}
         <div className="space-y-5">
-          <PendingApprovals organizationId={orgId} userId={userId} />
+          <PendingApprovals organizationId={orgId} userId={userId} locale={locale} />
           {/* روابط سريعة */}
           <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-              <i className="ti ti-zap text-[#EF9F27]" />إجراءات سريعة
+              <i className="ti ti-zap text-[#EF9F27]" />{t.quickActions}
             </h2>
             <div className="space-y-1.5">
               {[
-                { label:"طلب شراء جديد",    href:"/procurement/new",    icon:"ti-plus",          color:"text-[#1D9E75]" },
-                { label:"إضافة مورد",        href:"/vendors/new",        icon:"ti-truck",         color:"text-[#378ADD]" },
-                { label:"معالجة الرواتب",    href:"/hr/payroll",         icon:"ti-moneybag",      color:"text-[#EF9F27]" },
-                { label:"إعدادات النظام",    href:"/settings",           icon:"ti-settings-2",    color:"text-[#6B7280]" },
-                { label:"مصفوفة التواقيع",   href:"/settings/approval-matrix", icon:"ti-shield-check", color:"text-[#A855F7]" },
+                { label:t.newPurchaseRequest, href:"/procurement/new",    icon:"ti-plus",          color:"text-[#1D9E75]" },
+                { label:t.addVendor,          href:"/vendors/new",        icon:"ti-truck",         color:"text-[#378ADD]" },
+                { label:t.processPayroll,     href:"/hr/payroll",         icon:"ti-moneybag",      color:"text-[#EF9F27]" },
+                { label:t.systemSettings,     href:"/settings",           icon:"ti-settings-2",    color:"text-[#6B7280]" },
+                { label:t.approvalMatrix,     href:"/settings/approval-matrix", icon:"ti-shield-check", color:"text-[#A855F7]" },
               ].map(a => (
                 <Link key={a.href} href={a.href}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#161B26] transition-colors group">

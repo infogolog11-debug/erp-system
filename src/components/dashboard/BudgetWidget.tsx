@@ -2,8 +2,15 @@ import { db }  from "@/db";
 import { grants, grantBudgetLines } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link    from "next/link";
+import type { AppLocale } from "@/lib/preferences";
 
-export default async function BudgetWidget({ organizationId }: { organizationId:string }) {
+export default async function BudgetWidget({
+  organizationId,
+  locale,
+}: {
+  organizationId:string;
+  locale: AppLocale;
+}) {
   const lines = await db.query.grantBudgetLines.findMany({
     where: eq(grantBudgetLines.organizationId, organizationId),
     with:  { grant: { columns:{ name:true, code:true } } },
@@ -11,18 +18,33 @@ export default async function BudgetWidget({ organizationId }: { organizationId:
   });
 
   const fmt = (n:number) => n >= 1000 ? `${(n/1000).toFixed(0)}K` : String(n);
+  const t = locale === "ar"
+    ? {
+        title: "حالة الميزانيات",
+        viewAll: "عرض الكل",
+        empty: "لا توجد بيانات ميزانية",
+        spent: "منفق",
+        planned: "مخطط",
+      }
+    : {
+        title: "Budget status",
+        viewAll: "View all",
+        empty: "No budget data",
+        spent: "spent",
+        planned: "planned",
+      };
 
   return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#1F2937]">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-          <i className="ti ti-chart-bar text-[#0F6E56]" />حالة الميزانيات
+          <i className="ti ti-chart-bar text-[#0F6E56]" />{t.title}
         </h2>
-        <Link href="/grants" className="text-xs text-[#0F6E56] hover:text-[#1D9E75]">عرض الكل</Link>
+        <Link href="/grants" className="text-xs text-[#0F6E56] hover:text-[#1D9E75]">{t.viewAll}</Link>
       </div>
       <div className="p-4 space-y-3">
         {lines.length === 0 ? (
-          <p className="text-sm text-[#4B5563] text-center py-6">لا توجد بيانات ميزانية</p>
+          <p className="text-sm text-[#4B5563] text-center py-6">{t.empty}</p>
         ) : lines.map(l => {
           const planned  = Number(l.plannedAmount);
           const spent    = Number(l.spentAmount);
@@ -55,8 +77,8 @@ export default async function BudgetWidget({ organizationId }: { organizationId:
                 }} />
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-[10px] text-[#2D3748]">{fmt(spent)} منفق</span>
-                <span className="text-[10px] text-[#2D3748]">{fmt(planned)} مخطط</span>
+                <span className="text-[10px] text-[#2D3748]">{fmt(spent)} {t.spent}</span>
+                <span className="text-[10px] text-[#2D3748]">{fmt(planned)} {t.planned}</span>
               </div>
             </div>
           );

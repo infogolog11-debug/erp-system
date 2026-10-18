@@ -1,11 +1,15 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import type { AppLocale } from "@/lib/preferences";
 
 type Result = { type:string; icon:string; color:string; label:string; sub:string; status:string; href:string };
-const TYPE_AR: Record<string,string> = { grant:"منحة", vendor:"مورد", pr:"طلب شراء", employee:"موظف", asset:"أصل" };
+const TYPE_LABELS = {
+  ar: { grant:"منحة", vendor:"مورد", pr:"طلب شراء", employee:"موظف", asset:"أصل" },
+  en: { grant:"Grant", vendor:"Vendor", pr:"Purchase Request", employee:"Employee", asset:"Asset" },
+} as const;
 
-export default function GlobalSearch() {
+export default function GlobalSearch({ locale }: { locale: AppLocale }) {
   const [query,    setQuery]    = useState("");
   const [results,  setResults]  = useState<Result[]>([]);
   const [loading,  setLoading]  = useState(false);
@@ -66,7 +70,7 @@ export default function GlobalSearch() {
           onChange={e => { setQuery(e.target.value); setOpen(true); setSelected(-1); }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKey}
-          placeholder="بحث... (Ctrl+K)"
+          placeholder={locale === "ar" ? "بحث... (Ctrl+K)" : "Search... (Ctrl+K)"}
           className="flex-1 bg-transparent text-sm text-white placeholder-[#4B5563] focus:outline-none"
         />
         {loading && (
@@ -90,13 +94,15 @@ export default function GlobalSearch() {
             {results.length === 0 && !loading && (
               <div className="px-4 py-8 text-center">
                 <i className="ti ti-search-off text-[28px] text-[#2D3748]" />
-                <p className="text-xs text-[#4B5563] mt-2">لا نتائج لـ "{query}"</p>
+                <p className="text-xs text-[#4B5563] mt-2">
+                  {locale === "ar" ? `لا نتائج لـ "${query}"` : `No results for "${query}"`}
+                </p>
               </div>
             )}
             {Object.entries(grouped).map(([type, items]) => (
               <div key={type}>
                 <p className="text-[10px] font-semibold text-[#4B5563] px-4 pt-3 pb-1 uppercase tracking-wider">
-                  {TYPE_AR[type] ?? type}
+                  {TYPE_LABELS[locale][type as keyof typeof TYPE_LABELS.ar] ?? type}
                 </p>
                 {items.map((r, i) => {
                   const idx = results.indexOf(r);
@@ -119,9 +125,9 @@ export default function GlobalSearch() {
               </div>
             ))}
             <div className="border-t border-[#1F2937] px-4 py-2.5 flex items-center gap-3">
-              <span className="text-[10px] text-[#2D3748]">↑↓ تنقل</span>
-              <span className="text-[10px] text-[#2D3748]">↵ اختر</span>
-              <span className="text-[10px] text-[#2D3748]">Esc إغلاق</span>
+              <span className="text-[10px] text-[#2D3748]">{locale === "ar" ? "↑↓ تنقل" : "↑↓ Move"}</span>
+              <span className="text-[10px] text-[#2D3748]">{locale === "ar" ? "↵ اختر" : "↵ Select"}</span>
+              <span className="text-[10px] text-[#2D3748]">{locale === "ar" ? "Esc إغلاق" : "Esc Close"}</span>
             </div>
           </div>
         </>

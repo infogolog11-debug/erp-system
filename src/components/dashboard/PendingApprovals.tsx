@@ -2,8 +2,29 @@ import { db }  from "@/db";
 import { purchaseRequests, approvalDecisions, approvalRules } from "@/db/schema";
 import { eq, and, not, inArray } from "drizzle-orm";
 import Link    from "next/link";
+import type { AppLocale } from "@/lib/preferences";
 
-export default async function PendingApprovals({ organizationId, userId }: { organizationId:string; userId:string }) {
+export default async function PendingApprovals({
+  organizationId,
+  userId,
+  locale,
+}: {
+  organizationId:string;
+  userId:string;
+  locale: AppLocale;
+}) {
+  const t = locale === "ar"
+    ? {
+        empty: "لا موافقات معلقة",
+        title: "موافقات معلقة",
+        viewAll: "عرض الكل",
+      }
+    : {
+        empty: "No pending approvals",
+        title: "Pending approvals",
+        viewAll: "View all",
+      };
+
   // طلبات مقدمة لم تُكتمل بعد
   const submitted = await db.query.purchaseRequests.findMany({
     where: and(
@@ -30,7 +51,7 @@ export default async function PendingApprovals({ organizationId, userId }: { org
   if (submitted.length === 0) return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-5 text-center">
       <i className="ti ti-checks text-[#2D3748] text-[32px]" />
-      <p className="text-sm text-[#4B5563] mt-2">لا موافقات معلقة</p>
+      <p className="text-sm text-[#4B5563] mt-2">{t.empty}</p>
     </div>
   );
 
@@ -39,10 +60,10 @@ export default async function PendingApprovals({ organizationId, userId }: { org
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#1F2937]">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <i className="ti ti-clock-check text-[#EF9F27]" />
-          موافقات معلقة
+          {t.title}
           <span className="text-[11px] bg-[#1A1400] text-[#EF9F27] border border-[#3D2E00] px-2 py-0.5 rounded-full">{submitted.length}</span>
         </h2>
-        <Link href="/procurement" className="text-xs text-[#0F6E56] hover:text-[#1D9E75]">عرض الكل</Link>
+        <Link href="/procurement" className="text-xs text-[#0F6E56] hover:text-[#1D9E75]">{t.viewAll}</Link>
       </div>
       <div className="divide-y divide-[#1F2937]">
         {submitted.map(pr => (
@@ -57,7 +78,7 @@ export default async function PendingApprovals({ organizationId, userId }: { org
             </div>
             <div className="text-left shrink-0">
               <p className="text-[10px] text-[#EF9F27]">L{(decisionMap[pr.id]?.length ?? 0) + 1}</p>
-              <p className="text-[10px] text-[#4B5563]">{new Date(pr.createdAt).toLocaleDateString("ar")}</p>
+              <p className="text-[10px] text-[#4B5563]">{new Date(pr.createdAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")}</p>
             </div>
           </Link>
         ))}

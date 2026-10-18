@@ -6,19 +6,50 @@ import { and, eq, desc }    from "drizzle-orm";
 import NotificationBell  from "./NotificationBell";
 import GlobalSearch      from "@/components/shared/GlobalSearch";
 import Link                 from "next/link";
+import HeaderPreferences from "./HeaderPreferences";
+import type { AppLocale, ThemePreference } from "@/lib/preferences";
 
-const ROLE_LABELS: Record<string,string> = {
-  super_admin:"مدير عام", admin:"مدير نظام", finance_manager:"مدير مالي",
-  program_manager:"مدير برامج", hr_manager:"موارد بشرية",
-  procurement_officer:"مشتريات", warehouse_manager:"مخازن", viewer:"مشاهد",
+const ROLE_LABELS: Record<AppLocale, Record<string, string>> = {
+  ar: {
+    super_admin: "مدير عام",
+    admin: "مدير نظام",
+    finance_manager: "مدير مالي",
+    program_manager: "مدير برامج",
+    hr_manager: "موارد بشرية",
+    procurement_officer: "مشتريات",
+    warehouse_manager: "مخازن",
+    viewer: "مشاهد",
+  },
+  en: {
+    super_admin: "Super Admin",
+    admin: "System Admin",
+    finance_manager: "Finance Manager",
+    program_manager: "Program Manager",
+    hr_manager: "HR Manager",
+    procurement_officer: "Procurement",
+    warehouse_manager: "Warehouse",
+    viewer: "Viewer",
+  },
 };
 
-export default async function Header() {
+const COPY = {
+  ar: { reports: "التقارير", settings: "الإعدادات" },
+  en: { reports: "Reports", settings: "Settings" },
+} as const;
+
+export default async function Header({
+  locale,
+  theme,
+}: {
+  locale: AppLocale;
+  theme: ThemePreference;
+}) {
   const session = await auth();
   if (!session?.user) return null;
   const user    = session.user;
-  const role    = ROLE_LABELS[user.role] ?? user.role ?? "";
+  const role    = ROLE_LABELS[locale][user.role] ?? user.role ?? "";
   const initials = `${user.firstName?.[0] ?? user.nameAr?.[0] ?? "م"}`;
+  const t = COPY[locale];
 
   // جلب آخر 20 إشعار للمستخدم
   const userNotifs = user.id ? await db.query.notifications.findMany({
@@ -39,19 +70,21 @@ export default async function Header() {
         </Link>
         <span>/</span>
         <Link href="/reports" className="text-[11px] hover:text-[#1D9E75] transition-colors flex items-center gap-1">
-          <i className="ti ti-chart-bar text-[13px]" />التقارير
+          <i className="ti ti-chart-bar text-[13px]" />{t.reports}
         </Link>
         <span>/</span>
         <Link href="/settings" className="text-[11px] hover:text-[#1D9E75] transition-colors flex items-center gap-1">
-          <i className="ti ti-settings-2 text-[13px]" />الإعدادات
+          <i className="ti ti-settings-2 text-[13px]" />{t.settings}
         </Link>
       </div>
 
       {/* اليمين */}
       <div className="flex items-center gap-3">
+        <HeaderPreferences locale={locale} theme={theme} />
 
         {/* جرس الإشعارات الحقيقي */}
         <NotificationBell
+          locale={locale}
           notifications={userNotifs.map(n => ({
             id:        n.id,
             title:     n.title,
@@ -66,7 +99,7 @@ export default async function Header() {
         />
 
         {/* البحث الشامل */}
-        <GlobalSearch />
+        <GlobalSearch locale={locale} />
 
         <div className="w-px h-6 bg-[#1F2937]" />
 

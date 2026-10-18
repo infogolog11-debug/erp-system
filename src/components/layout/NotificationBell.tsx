@@ -1,9 +1,10 @@
 "use client";
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import type { AppLocale } from "@/lib/preferences";
 
 type Notif = { id:string; title:string; titleAr?:string|null; body:string; type:string; link?:string|null; isRead:boolean; createdAt:string };
-type Props = { notifications: Notif[]; unreadCount: number };
+type Props = { notifications: Notif[]; unreadCount: number; locale: AppLocale };
 
 const TYPE_STYLE: Record<string,{ icon:string; color:string }> = {
   approval: { icon:"ti-shield-check",   color:"text-[#378ADD]"  },
@@ -13,7 +14,7 @@ const TYPE_STYLE: Record<string,{ icon:string; color:string }> = {
   success:  { icon:"ti-check-circle",   color:"text-[#1D9E75]"  },
 };
 
-export default function NotificationBell({ notifications, unreadCount }: Props) {
+export default function NotificationBell({ notifications, unreadCount, locale }: Props) {
   const [open, setOpen]       = useState(false);
   const [items, setItems]     = useState(notifications);
   const [isPending, start]    = useTransition();
@@ -49,15 +50,15 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full mt-2 z-20 w-80 bg-[#0F1117] border border-[#1F2937] rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#1F2937]">
-              <span className="text-sm font-semibold text-white">الإشعارات</span>
+              <span className="text-sm font-semibold text-white">{locale === "ar" ? "الإشعارات" : "Notifications"}</span>
               <div className="flex items-center gap-2">
                 {unread > 0 && (
                   <button onClick={markAllRead} className="text-[11px] text-[#0F6E56] hover:text-[#1D9E75]">
-                    قراءة الكل
+                    {locale === "ar" ? "قراءة الكل" : "Mark all read"}
                   </button>
                 )}
                 <Link href="/notifications" className="text-[11px] text-[#4B5563] hover:text-[#9CA3AF]" onClick={() => setOpen(false)}>
-                  عرض الكل
+                  {locale === "ar" ? "عرض الكل" : "View all"}
                 </Link>
               </div>
             </div>
@@ -65,7 +66,7 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
               {items.length === 0 ? (
                 <div className="py-10 text-center">
                   <i className="ti ti-bell-off text-[32px] text-[#2D3748]" />
-                  <p className="text-xs text-[#4B5563] mt-2">لا توجد إشعارات</p>
+                  <p className="text-xs text-[#4B5563] mt-2">{locale === "ar" ? "لا توجد إشعارات" : "No notifications"}</p>
                 </div>
               ) : items.slice(0,8).map(n => {
                 const s = TYPE_STYLE[n.type] ?? TYPE_STYLE.info;
@@ -82,7 +83,7 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
                       </p>
                       <p className="text-[10px] text-[#4B5563] mt-0.5 truncate">{n.body}</p>
                       <p className="text-[10px] text-[#2D3748] mt-0.5">
-                        {new Date(n.createdAt).toLocaleDateString("ar")}
+                        {new Date(n.createdAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")}
                       </p>
                     </div>
                     {!n.isRead && <div className="w-1.5 h-1.5 bg-[#0F6E56] rounded-full mt-1.5 shrink-0" />}
