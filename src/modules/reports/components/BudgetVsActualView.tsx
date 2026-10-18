@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import type { AppLocale } from "@/lib/preferences";
 
 type LineVM = {
   id: string; name: string; nameAr: string | null; category: string;
@@ -21,8 +22,13 @@ type DonorVM = {
   totalPlanned: number; totalCommitted: number; totalSpent: number;
 };
 
-const DONOR_TYPE_AR: Record<string,string> = {
-  bilateral: "ثنائي", multilateral: "متعدد الأطراف", private: "خاص", government: "حكومي",
+const DONOR_TYPE_AR: Record<AppLocale, Record<string,string>> = {
+  ar: {
+    bilateral: "ثنائي", multilateral: "متعدد الأطراف", private: "خاص", government: "حكومي",
+  },
+  en: {
+    bilateral: "Bilateral", multilateral: "Multilateral", private: "Private", government: "Government",
+  },
 };
 
 const fmt = (n: number) =>
@@ -36,10 +42,14 @@ function utilColor(pct: number, warn: number, block: number) {
   return "#1D9E75";                     // آمن — أخضر
 }
 
-function ProgressRow({ label, planned, committed, spent, warn=80, block=100, currencyCode }: {
+function ProgressRow({ label, planned, committed, spent, warn=80, block=100, currencyCode, locale = "ar" }: {
   label: string; planned: number; committed: number; spent: number;
-  warn?: number; block?: number; currencyCode: string;
+  warn?: number; block?: number; currencyCode: string; locale?: AppLocale;
 }) {
+  const isAr = locale === "ar";
+  const t = isAr
+    ? { committed:"ملتزم", spent:"منفق", remaining:"متبقي" }
+    : { committed:"Committed", spent:"Spent", remaining:"Remaining" };
   const used = committed + spent;
   const pct  = planned > 0 ? (used/planned*100) : 0;
   const color = utilColor(pct, warn, block);
@@ -59,15 +69,19 @@ function ProgressRow({ label, planned, committed, spent, warn=80, block=100, cur
         <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct,100).toFixed(1)}%`, background: color }} />
       </div>
       <div className="flex items-center justify-between text-[10px] text-[#6B7280]">
-        <span>ملتزم: {fmt(committed)}</span>
-        <span>منفق: {fmt(spent)}</span>
-        <span className={remaining < 0 ? "text-[#E24B4A] font-semibold" : ""}>متبقي: {fmt(remaining)}</span>
+        <span>{t.committed}: {fmt(committed)}</span>
+        <span>{t.spent}: {fmt(spent)}</span>
+        <span className={remaining < 0 ? "text-[#E24B4A] font-semibold" : ""}>{t.remaining}: {fmt(remaining)}</span>
       </div>
     </div>
   );
 }
 
-function GrantCard({ grant }: { grant: GrantVM }) {
+function GrantCard({ grant, locale = "ar" }: { grant: GrantVM; locale?: AppLocale }) {
+  const isAr = locale === "ar";
+  const t = isAr
+    ? { totalGrant:"إجمالي المنحة", noBudgetLines:"لا توجد بنود ميزانية مُعرّفة لهذه المنحة", viewGrantDetails:"عرض تفاصيل المنحة" }
+    : { totalGrant:"Grant total", noBudgetLines:"No budget lines defined for this grant", viewGrantDetails:"View grant details" };
   const [open, setOpen] = useState(false);
   const color = utilColor(grant.utilizationPct, 80, 100);
 
@@ -78,7 +92,7 @@ function GrantCard({ grant }: { grant: GrantVM }) {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1A2332] transition-colors"
       >
         <div className="flex items-center gap-3 text-right">
-          <i className={`ti ti-chevron-${open ? "down" : "left"} text-[#6B7280] text-sm`} />
+          <i className={`ti ti-chevron-${open ? "down" : isAr ? "right" : "left"} text-[#6B7280] text-sm`} />
           <div>
             <div className="text-[13px] font-medium text-white">{grant.nameAr || grant.name}</div>
             <div className="text-[11px] text-[#6B7280]">{grant.code} · {grant.currencyCode}</div>
@@ -86,7 +100,7 @@ function GrantCard({ grant }: { grant: GrantVM }) {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-[11px] text-[#6B7280]">
-            {new Date(grant.startDate).toLocaleDateString("ar")} – {new Date(grant.endDate).toLocaleDateString("ar")}
+            {new Date(grant.startDate).toLocaleDateString(isAr ? "ar" : "en-US")} – {new Date(grant.endDate).toLocaleDateString(isAr ? "ar" : "en-US")}
           </span>
           <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>
             {grant.utilizationPct.toFixed(0)}%
@@ -95,15 +109,15 @@ function GrantCard({ grant }: { grant: GrantVM }) {
       </button>
       <div className="px-4 pb-3">
         <ProgressRow
-          label="إجمالي المنحة"
+          label={t.totalGrant}
           planned={grant.planned} committed={grant.committed} spent={grant.spent}
-          currencyCode={grant.currencyCode}
+          currencyCode={grant.currencyCode} locale={locale}
         />
       </div>
       {open && (
         <div className="border-t border-[#1F2937] px-4 py-3 space-y-3 bg-[#0B0F17]">
           {grant.lines.length === 0 && (
-            <p className="text-[11px] text-[#6B7280]">لا توجد بنود ميزانية مُعرّفة لهذه المنحة</p>
+            <p className="text-[11px] text-[#6B7280]">{t.noBudgetLines}</p>
           )}
           {grant.lines.map(l => (
             <ProgressRow
@@ -111,14 +125,14 @@ function GrantCard({ grant }: { grant: GrantVM }) {
               label={l.nameAr || l.name}
               planned={l.planned} committed={l.committed} spent={l.spent}
               warn={l.warningThreshold} block={l.blockThreshold}
-              currencyCode={grant.currencyCode}
+              currencyCode={grant.currencyCode} locale={locale}
             />
           ))}
           <Link
             href={`/grants/${grant.id}`}
             className="inline-flex items-center gap-1 text-[11px] text-[#0F6E56] hover:text-[#1D9E75] pt-1"
           >
-            عرض تفاصيل المنحة <i className="ti ti-arrow-left text-xs" />
+            {t.viewGrantDetails} <i className={`ti ${isAr ? "ti-arrow-left" : "ti-arrow-right"} text-xs`} />
           </Link>
         </div>
       )}
@@ -126,7 +140,12 @@ function GrantCard({ grant }: { grant: GrantVM }) {
   );
 }
 
-export default function BudgetVsActualView({ donors }: { donors: DonorVM[] }) {
+export default function BudgetVsActualView({ donors, locale = "ar" }: { donors: DonorVM[]; locale?: AppLocale }) {
+  const isAr = locale === "ar";
+  const donorTypeLabel = DONOR_TYPE_AR[locale] ?? DONOR_TYPE_AR.ar;
+  const t = isAr
+    ? { title:"الميزانية مقابل الفعلي حسب المانح", subtitle:"Budget vs Actual by Donor", allDonors:"كل المانحين", grandTotal:"الإجمالي العام لكل المانحين", noData:"لا توجد بيانات منح لعرضها", overallSpendRatio:"نسبة الصرف الكلية" }
+    : { title:"Budget vs Actual by Donor", subtitle:"Budget utilization by donor and grant", allDonors:"All donors", grandTotal:"Grand total across all donors", noData:"No grant data to display", overallSpendRatio:"Overall spend ratio" };
   const [filter, setFilter] = useState<string>("all");
 
   const filtered = useMemo(
@@ -143,16 +162,16 @@ export default function BudgetVsActualView({ donors }: { donors: DonorVM[] }) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-            <i className="ti ti-report-money text-[#0F6E56]" />الميزانية مقابل الفعلي حسب المانح
+            <i className="ti ti-report-money text-[#0F6E56]" />{t.title}
           </h1>
-          <p className="text-[13px] text-[#6B7280] mt-1">Budget vs Actual by Donor</p>
+          <p className="text-[13px] text-[#6B7280] mt-1">{t.subtitle}</p>
         </div>
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
           className="bg-[#111827] border border-[#1F2937] text-[13px] text-[#D1D5DB] rounded-lg px-3 py-2 focus:outline-none focus:border-[#0F6E56]"
         >
-          <option value="all">كل المانحين</option>
+          <option value="all">{t.allDonors}</option>
           {donors.map(d => (
             <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>
           ))}
@@ -162,14 +181,14 @@ export default function BudgetVsActualView({ donors }: { donors: DonorVM[] }) {
       {/* ملخص عام */}
       <div className="rounded-xl border border-[#1F2937] bg-[#111827] p-5">
         <ProgressRow
-          label="الإجمالي العام لكل المانحين"
+          label={t.grandTotal}
           planned={grandPlanned} committed={grandCommitted} spent={grandSpent}
-          currencyCode=""
+          currencyCode="" locale={locale}
         />
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-[13px] text-[#6B7280] py-10">لا توجد بيانات منح لعرضها</p>
+        <p className="text-center text-[13px] text-[#6B7280] py-10">{t.noData}</p>
       )}
 
       <div className="space-y-6">
@@ -184,16 +203,16 @@ export default function BudgetVsActualView({ donors }: { donors: DonorVM[] }) {
                   <i className="ti ti-building-bank text-[#378ADD]" />
                   <h2 className="text-[15px] font-semibold text-white">{donor.nameAr || donor.name}</h2>
                   <span className="text-[11px] text-[#6B7280] bg-[#1F2937] px-2 py-0.5 rounded-full">
-                    {DONOR_TYPE_AR[donor.donorType] ?? donor.donorType}
+                    {donorTypeLabel[donor.donorType] ?? donor.donorType}
                   </span>
                 </div>
                 <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>
-                  نسبة الصرف الكلية: {pct.toFixed(0)}%
+                  {t.overallSpendRatio}: {pct.toFixed(0)}%
                 </span>
               </div>
 
               <div className="grid gap-3">
-                {donor.grants.map(g => <GrantCard key={g.id} grant={g} />)}
+                {donor.grants.map(g => <GrantCard key={g.id} grant={g} locale={locale} />)}
               </div>
             </div>
           );

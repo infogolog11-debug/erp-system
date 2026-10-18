@@ -2,17 +2,36 @@
 "use client";
 import { useState, useTransition } from "react";
 import { submitBidScore } from "@/modules/vendors/actions";
+import type { AppLocale } from "@/lib/preferences";
 
 type Criteria = { id: string; criteriaNameAr: string; weight: number; maxScore: number };
 type Bid = { id: string; vendorName: string; bidAmount: number; totalScore?: number };
 
 export default function BidEvaluationPanel({
   tenderId, organizationId, evaluatorId,
-  criteria, bids, currency = "USD",
+  criteria, bids, currency = "USD", locale = "ar",
 }: {
   tenderId: string; organizationId: string; evaluatorId: string;
-  criteria: Criteria[]; bids: Bid[]; currency?: string;
+  criteria: Criteria[]; bids: Bid[]; currency?: string; locale?: AppLocale;
 }) {
+  const isAr = locale === "ar";
+  const t = isAr ? {
+    title:          "تقييم العروض",
+    missingCriteria:"يرجى تقييم جميع المعايير قبل الإرسال",
+    totalScore:     "الدرجة الكلية",
+    notePlaceholder:"ملاحظة (اختياري)...",
+    submit:         "إرسال التقييم",
+    submitted:      "تم تسجيل تقييمك — لا يمكن التعديل",
+    ranking:        "ترتيب العروض حسب تقييمك:",
+  } : {
+    title:          "Bid evaluation",
+    missingCriteria:"Please evaluate all criteria before submitting",
+    totalScore:     "Total score",
+    notePlaceholder:"Note (optional)...",
+    submit:         "Submit evaluation",
+    submitted:      "Your evaluation has been recorded — it cannot be edited",
+    ranking:        "Bids ranked by your evaluation:",
+  };
   const [scores, setScores]   = useState<Record<string, Record<string, string>>>({});
   const [notes,  setNotes]    = useState<Record<string, string>>({});
   const [saving, setSaving]   = useState<string | null>(null);
@@ -26,7 +45,7 @@ export default function BidEvaluationPanel({
   function submitAll(bidId: string) {
     const bidScores = scores[bidId] ?? {};
     const missing = criteria.filter(c => !bidScores[c.id] && bidScores[c.id] !== "0");
-    if (missing.length > 0) { setError(`يرجى تقييم جميع المعايير قبل الإرسال`); return; }
+    if (missing.length > 0) { setError(t.missingCriteria); return; }
     setError("");
     start(async () => {
       setSaving(bidId);
@@ -51,7 +70,7 @@ export default function BidEvaluationPanel({
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <i className="ti ti-award text-[#0F6E56]" />
-          تقييم العروض
+          {t.title}
         </h2>
         <div className="flex items-center gap-2">
           {criteria.map(c => (
@@ -82,7 +101,7 @@ export default function BidEvaluationPanel({
                     <p className="text-2xl font-bold tabular-nums" style={{
                       color: finalScore >= 80 ? "#1D9E75" : finalScore >= 60 ? "#EF9F27" : "#E24B4A"
                     }}>{finalScore.toFixed(1)}</p>
-                    <p className="text-[10px] text-[#4B5563]">الدرجة الكلية</p>
+                    <p className="text-[10px] text-[#4B5563]">{t.totalScore}</p>
                   </div>
                 )}
               </div>
@@ -120,7 +139,7 @@ export default function BidEvaluationPanel({
                   <input
                     type="text" value={notes[bid.id] ?? ""}
                     onChange={e => setNotes(p => ({ ...p, [bid.id]: e.target.value }))}
-                    placeholder="ملاحظة (اختياري)..."
+                    placeholder={t.notePlaceholder}
                     className="flex-1 bg-[#0F1117] border border-[#2D3748] rounded-lg px-3 py-2 text-xs text-white placeholder-[#4B5563] focus:outline-none focus:border-[#0F6E56]"
                   />
                   <button onClick={() => submitAll(bid.id)} disabled={isSaving}
@@ -129,13 +148,13 @@ export default function BidEvaluationPanel({
                       ? <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0110 10" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
                       : <i className="ti ti-send" />
                     }
-                    إرسال التقييم
+                    {t.submit}
                   </button>
                 </div>
               )}
               {submitted && (
                 <p className="text-xs text-[#1D9E75] flex items-center gap-1 pt-1">
-                  <i className="ti ti-check-circle" />تم تسجيل تقييمك — لا يمكن التعديل
+                  <i className="ti ti-check-circle" />{t.submitted}
                 </p>
               )}
             </div>
@@ -146,7 +165,7 @@ export default function BidEvaluationPanel({
       {/* ترتيب العروض بعد التقييم */}
       {Object.keys(results).length > 0 && (
         <div className="pt-3 border-t border-[#1F2937]">
-          <p className="text-xs font-medium text-[#9CA3AF] mb-2">ترتيب العروض حسب تقييمك:</p>
+          <p className="text-xs font-medium text-[#9CA3AF] mb-2">{t.ranking}</p>
           {bids
             .filter(b => results[b.id] !== undefined)
             .sort((a,b) => (results[b.id]??0) - (results[a.id]??0))

@@ -6,6 +6,8 @@ import { eq, desc } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import ChatterBox   from "@/components/shared/ChatterBox";
 import VendorScorecardPanel from "@/modules/vendors/components/VendorScorecardPanel";
+import { getRequestPreferences } from "@/lib/preferences";
+import type { AppLocale } from "@/lib/preferences";
 
 export default async function VendorDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
@@ -16,6 +18,7 @@ export default async function VendorDetailPage({ params: paramsPromise }: { para
   const __perm = await getUserPermission(session.user.id, orgId, "vendors", session.user.role);
   if (!canView(__perm)) redirect("/");
   const userId  = session.user.id;
+  const prefs = await getRequestPreferences();
 
   const vendor = await db.query.vendors.findFirst({
     where: eq(vendors.id, params.id),
@@ -36,10 +39,17 @@ export default async function VendorDetailPage({ params: paramsPromise }: { para
     restricted:  "bg-[#2A1215] text-[#E24B4A] border-[#4A1C20]",
     blacklisted: "bg-[#2A1215] text-[#E24B4A] border-[#4A1C20]",
   };
-  const STATUS_LABEL: Record<string,string> = {
-    approved:"معتمد", preferred:"مفضل", pending:"قيد المراجعة",
-    restricted:"مقيد", blacklisted:"محظور",
+  const STATUS_LABEL: Record<AppLocale, Record<string,string>> = {
+    ar: {
+      approved:"معتمد", preferred:"مفضل", pending:"قيد المراجعة",
+      restricted:"مقيد", blacklisted:"محظور",
+    },
+    en: {
+      approved:"Approved", preferred:"Preferred", pending:"Pending review",
+      restricted:"Restricted", blacklisted:"Blacklisted",
+    },
   };
+  const labelMap = STATUS_LABEL[prefs.locale] ?? STATUS_LABEL.ar;
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
@@ -51,7 +61,7 @@ export default async function VendorDetailPage({ params: paramsPromise }: { para
               {vendor.code}
             </span>
             <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${STATUS_STYLE[vendor.status] ?? ""}`}>
-              {STATUS_LABEL[vendor.status] ?? vendor.status}
+              {labelMap[vendor.status] ?? vendor.status}
             </span>
           </div>
           <h1 className="text-xl font-semibold text-white">{vendor.name}</h1>
@@ -62,7 +72,7 @@ export default async function VendorDetailPage({ params: paramsPromise }: { para
             <p className="text-3xl font-bold tabular-nums text-[#EF9F27]">
               {Number(vendor.overallScore).toFixed(1)}
             </p>
-            <p className="text-xs text-[#4B5563]">متوسط التقييم</p>
+            <p className="text-xs text-[#4B5563]">{prefs.locale === "ar" ? "متوسط التقييم" : "Average rating"}</p>
           </div>
         )}
       </div>
@@ -73,11 +83,11 @@ export default async function VendorDetailPage({ params: paramsPromise }: { para
           {/* بيانات المورد */}
           <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-5 grid grid-cols-2 gap-4">
             {[
-              { label:"البريد الإلكتروني", value: vendor.email,   icon:"ti-mail" },
-              { label:"الهاتف",            value: vendor.phone,   icon:"ti-phone" },
-              { label:"الدولة",            value: vendor.country, icon:"ti-map-pin" },
-              { label:"الضريبة",           value: vendor.taxNumber, icon:"ti-receipt-tax" },
-              { label:"العملة المفضلة",    value: vendor.preferredCurrency?.code, icon:"ti-currency-dollar" },
+              { label: prefs.locale === "ar" ? "البريد الإلكتروني" : "Email",           value: vendor.email,   icon:"ti-mail" },
+              { label: prefs.locale === "ar" ? "الهاتف" : "Phone",                      value: vendor.phone,   icon:"ti-phone" },
+              { label: prefs.locale === "ar" ? "الدولة" : "Country",                    value: vendor.country, icon:"ti-map-pin" },
+              { label: prefs.locale === "ar" ? "الضريبة" : "Tax",                       value: vendor.taxNumber, icon:"ti-receipt-tax" },
+              { label: prefs.locale === "ar" ? "العملة المفضلة" : "Preferred currency", value: vendor.preferredCurrency?.code, icon:"ti-currency-dollar" },
             ].map(({ label, value, icon }) => value ? (
               <div key={label} className="flex items-start gap-3">
                 <i className={`ti ${icon} text-[#4B5563] mt-0.5`} />
@@ -110,6 +120,7 @@ export default async function VendorDetailPage({ params: paramsPromise }: { para
               comments:        r.comments ?? undefined,
               ratingDate:      r.ratingDate.toISOString(),
             }))}
+            locale={prefs.locale}
           />
         </div>
       </div>

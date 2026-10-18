@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { saveApprovalRule, deleteApprovalRule } from "@/modules/settings/approval-matrix-actions";
+import type { AppLocale } from "@/lib/preferences";
 
 type UserRole = "super_admin"|"admin"|"finance_manager"|"program_manager"|"hr_manager"|"procurement_officer"|"warehouse_manager"|"viewer";
 
@@ -12,10 +13,10 @@ type Rule = {
 type User = { id:string; name:string; role:string };
 
 const MODULES = [
-  { key:"procurement", label:"المشتريات",  icon:"ti-shopping-cart" },
-  { key:"grants",      label:"المنح",      icon:"ti-heart-handshake" },
-  { key:"payments",    label:"المدفوعات",  icon:"ti-cash" },
-  { key:"hr",          label:"الموارد البشرية", icon:"ti-users" },
+  { key:"procurement", labelAr:"المشتريات",  labelEn:"Procurement",     icon:"ti-shopping-cart" },
+  { key:"grants",      labelAr:"المنح",      labelEn:"Grants",          icon:"ti-heart-handshake" },
+  { key:"payments",    labelAr:"المدفوعات",  labelEn:"Payments",        icon:"ti-cash" },
+  { key:"hr",          labelAr:"الموارد البشرية", labelEn:"Human resources", icon:"ti-users" },
 ];
 
 const EMPTY_RULE = {
@@ -24,9 +25,72 @@ const EMPTY_RULE = {
   approverRole:null as UserRole|null, slaHours:48, isActive:true,
 };
 
-export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users }: {
-  orgId:string; rules:Rule[]; users:User[];
+export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users, locale = "ar" }: {
+  orgId:string; rules:Rule[]; users:User[]; locale?:AppLocale;
 }) {
+  const isAr = locale === "ar";
+  const modLabel = (m: typeof MODULES[number]) => isAr ? m.labelAr : m.labelEn;
+  const t = isAr
+    ? {
+        title: "مصفوفة التواقيع",
+        subtitle: "تحديد عدد ومستويات الموافقات حسب قيمة الطلب ووحدة العمل",
+        levelNameRequired: "اسم المرحلة مطلوب",
+        approverRequired: "يجب تحديد الموافق أو الدور",
+        error: "خطأ",
+        formEditTitle: "تعديل مرحلة موافقة",
+        formAddTitle: "إضافة مرحلة موافقة جديدة",
+        levelName: "اسم المرحلة",
+        levelNamePlaceholder: "مثال: موافقة مدير المشتريات",
+        level: "المستوى",
+        sla: "SLA (ساعة)",
+        minAmount: "الحد الأدنى ($)",
+        maxAmount: "الحد الأعلى ($ — اتركه فارغاً = بلا حد)",
+        maxAmountPlaceholder: "∞ بلا حد",
+        approver: "الموافق (مستخدم)",
+        chooseUser: "— اختر مستخدم —",
+        update: "تحديث",
+        save: "حفظ",
+        cancel: "إلغاء",
+        rulesOf: (label: string) => `قواعد ${label}`,
+        addStage: "إضافة مرحلة",
+        emptyTitle: "لا توجد قواعد موافقة لهذه الوحدة",
+        emptyHint: "أضف مرحلة موافقة لتفعيل نظام التواقيع",
+        headers: ["النطاق المالي","المستوى","اسم المرحلة","الموافق","SLA","الحالة","إجراء"],
+        user: "مستخدم",
+        hours: (n: number) => `${n}س`,
+        active: "نشط",
+        inactive: "معطّل",
+      }
+    : {
+        title: "Approval matrix",
+        subtitle: "Define the number and levels of approvals by request value and business unit",
+        levelNameRequired: "Stage name is required",
+        approverRequired: "You must specify an approver or a role",
+        error: "Error",
+        formEditTitle: "Edit approval stage",
+        formAddTitle: "Add new approval stage",
+        levelName: "Stage name",
+        levelNamePlaceholder: "e.g. Procurement manager approval",
+        level: "Level",
+        sla: "SLA (hours)",
+        minAmount: "Minimum amount ($)",
+        maxAmount: "Maximum amount ($ — leave empty = no limit)",
+        maxAmountPlaceholder: "∞ no limit",
+        approver: "Approver (user)",
+        chooseUser: "— Select a user —",
+        update: "Update",
+        save: "Save",
+        cancel: "Cancel",
+        rulesOf: (label: string) => `${label} rules`,
+        addStage: "Add stage",
+        emptyTitle: "No approval rules for this module",
+        emptyHint: "Add an approval stage to activate the signature system",
+        headers: ["Amount range","Level","Stage name","Approver","SLA","Status","Action"],
+        user: "User",
+        hours: (n: number) => `${n}h`,
+        active: "Active",
+        inactive: "Disabled",
+      };
   const [rules, setRules]       = useState(initialRules);
   const [activeModule, setMod]  = useState("procurement");
   const [showForm, setShowForm] = useState(false);
@@ -54,8 +118,8 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
   }
 
   function submit() {
-    if (!form.levelName.trim()) { setError("اسم المرحلة مطلوب"); return; }
-    if (!form.approverUserId && !form.approverRole) { setError("يجب تحديد الموافق أو الدور"); return; }
+    if (!form.levelName.trim()) { setError(t.levelNameRequired); return; }
+    if (!form.approverUserId && !form.approverRole) { setError(t.approverRequired); return; }
     setError("");
     start(async () => {
       const res = await saveApprovalRule(orgId, editId, form);
@@ -66,7 +130,7 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
           setRules(p => [...p, { ...form, id:res.data.id }]);
         }
         setShowForm(false); setEditId(null);
-      } else setError(res.error ?? "خطأ");
+      } else setError(res.error ?? t.error);
     });
   }
 
@@ -83,10 +147,10 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-          <i className="ti ti-shield-check text-[#0F6E56]" />مصفوفة التواقيع
+          <i className="ti ti-shield-check text-[#0F6E56]" />{t.title}
         </h1>
         <p className="text-sm text-[#6B7280] mt-1">
-          تحديد عدد ومستويات الموافقات حسب قيمة الطلب ووحدة العمل
+          {t.subtitle}
         </p>
       </div>
 
@@ -100,7 +164,7 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
                 : "bg-[#0F1117] border border-[#1F2937] text-[#6B7280] hover:text-white"
             }`}>
             <i className={`ti ${m.icon} text-[14px]`} />
-            {m.label}
+            {modLabel(m)}
             <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
               activeModule === m.key ? "bg-white/20" : "bg-[#1F2937] text-[#4B5563]"
             }`}>
@@ -115,48 +179,48 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
         <div className="bg-[#0D0A00] border border-[#3D2E00] rounded-2xl p-5 space-y-4">
           <h3 className="text-sm font-semibold text-[#EF9F27] flex items-center gap-2">
             <i className={`ti ${editId ? "ti-edit" : "ti-plus"}`} />
-            {editId ? "تعديل مرحلة موافقة" : "إضافة مرحلة موافقة جديدة"}
+            {editId ? t.formEditTitle : t.formAddTitle}
           </h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">اسم المرحلة</label>
+              <label className="text-xs text-[#6B7280] block mb-1">{t.levelName}</label>
               <input value={form.levelName}
                 onChange={e => setForm(p => ({ ...p, levelName: e.target.value }))}
-                placeholder="مثال: موافقة مدير المشتريات"
+                placeholder={t.levelNamePlaceholder}
                 className="w-full bg-[#161B26] border border-[#3D2E00] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#EF9F27]" />
             </div>
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">المستوى</label>
+              <label className="text-xs text-[#6B7280] block mb-1">{t.level}</label>
               <input type="number" min={1} max={5} value={form.approvalLevel}
                 onChange={e => setForm(p => ({ ...p, approvalLevel: Number(e.target.value) }))}
                 className="w-full bg-[#161B26] border border-[#3D2E00] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#EF9F27]" />
             </div>
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">SLA (ساعة)</label>
+              <label className="text-xs text-[#6B7280] block mb-1">{t.sla}</label>
               <input type="number" min={1} value={form.slaHours}
                 onChange={e => setForm(p => ({ ...p, slaHours: Number(e.target.value) }))}
                 className="w-full bg-[#161B26] border border-[#3D2E00] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#EF9F27]" />
             </div>
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">الحد الأدنى ($)</label>
+              <label className="text-xs text-[#6B7280] block mb-1">{t.minAmount}</label>
               <input type="number" min={0} value={form.minAmount}
                 onChange={e => setForm(p => ({ ...p, minAmount: Number(e.target.value) }))}
                 className="w-full bg-[#161B26] border border-[#3D2E00] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#EF9F27]" />
             </div>
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">الحد الأعلى ($ — اتركه فارغاً = بلا حد)</label>
+              <label className="text-xs text-[#6B7280] block mb-1">{t.maxAmount}</label>
               <input type="number" min={0}
                 value={form.maxAmount ?? ""}
                 onChange={e => setForm(p => ({ ...p, maxAmount: e.target.value ? Number(e.target.value) : null }))}
-                placeholder="∞ بلا حد"
+                placeholder={t.maxAmountPlaceholder}
                 className="w-full bg-[#161B26] border border-[#3D2E00] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#EF9F27]" />
             </div>
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">الموافق (مستخدم)</label>
+              <label className="text-xs text-[#6B7280] block mb-1">{t.approver}</label>
               <select value={form.approverUserId ?? ""}
                 onChange={e => setForm(p => ({ ...p, approverUserId: e.target.value || null, approverRole: e.target.value ? null : p.approverRole }))}
                 className="w-full bg-[#161B26] border border-[#3D2E00] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#EF9F27]">
-                <option value="">— اختر مستخدم —</option>
+                <option value="">{t.chooseUser}</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
               </select>
             </div>
@@ -169,11 +233,11 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
                 ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0110 10" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
                 : <i className="ti ti-check" />
               }
-              {editId ? "تحديث" : "حفظ"}
+              {editId ? t.update : t.save}
             </button>
             <button onClick={() => { setShowForm(false); setError(""); }}
               className="px-4 py-2 text-sm text-[#6B7280] hover:text-white border border-[#2D3748] rounded-lg transition-all">
-              إلغاء
+              {t.cancel}
             </button>
           </div>
         </div>
@@ -183,25 +247,25 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
       <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#1F2937]">
           <h2 className="text-sm font-semibold text-white">
-            قواعد {MODULES.find(m => m.key === activeModule)?.label}
+            {t.rulesOf(modLabel(MODULES.find(m => m.key === activeModule)!))}
           </h2>
           <button onClick={openAdd}
             className="flex items-center gap-1.5 text-xs bg-[#0F6E56] hover:bg-[#1D9E75] text-white px-3 py-1.5 rounded-lg transition-all">
-            <i className="ti ti-plus" />إضافة مرحلة
+            <i className="ti ti-plus" />{t.addStage}
           </button>
         </div>
 
         {filtered.length === 0 ? (
           <div className="py-14 text-center">
             <i className="ti ti-shield-off text-[40px] text-[#2D3748]" />
-            <p className="text-sm text-[#4B5563] mt-3">لا توجد قواعد موافقة لهذه الوحدة</p>
-            <p className="text-xs text-[#2D3748] mt-1">أضف مرحلة موافقة لتفعيل نظام التواقيع</p>
+            <p className="text-sm text-[#4B5563] mt-3">{t.emptyTitle}</p>
+            <p className="text-xs text-[#2D3748] mt-1">{t.emptyHint}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1F2937] bg-[#161B26]">
-                {["النطاق المالي","المستوى","اسم المرحلة","الموافق","SLA","الحالة","إجراء"].map(h => (
+                {t.headers.map(h => (
                   <th key={h} className="text-right text-xs text-[#6B7280] font-medium px-4 py-3">{h}</th>
                 ))}
               </tr>
@@ -222,14 +286,14 @@ export default function ApprovalMatrixPanel({ orgId, rules: initialRules, users 
                   <td className="px-4 py-3 text-[#D1D5DB]">{r.levelName}</td>
                   <td className="px-4 py-3 text-[#9CA3AF] text-xs">
                     {r.approverUserId
-                      ? (users.find(u => u.id === r.approverUserId)?.name ?? "مستخدم")
+                      ? (users.find(u => u.id === r.approverUserId)?.name ?? t.user)
                       : r.approverRole ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-[#6B7280] text-xs">{r.slaHours}س</td>
+                  <td className="px-4 py-3 text-[#6B7280] text-xs">{t.hours(r.slaHours)}</td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
                       r.isActive ? "bg-[#001A12] text-[#1D9E75] border-[#0F3D28]" : "bg-[#161B26] text-[#4B5563] border-[#2D3748]"
-                    }`}>{r.isActive ? "نشط" : "معطّل"}</span>
+                    }`}>{r.isActive ? t.active : t.inactive}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">

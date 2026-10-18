@@ -2,12 +2,18 @@
 "use client";
 import { useState, useTransition } from "react";
 import { addChatterMessage } from "@/core/actions/chatter";
+import type { AppLocale } from "@/lib/preferences";
 
 export default function ChatterInput({
-  tableName, recordId, organizationId, userId,
-}: { tableName:string; recordId:string; organizationId:string; userId:string }) {
+  tableName, recordId, organizationId, userId, locale = "ar",
+}: { tableName:string; recordId:string; organizationId:string; userId:string; locale?: AppLocale }) {
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const isAr = locale === "ar";
+  const t = isAr
+    ? { placeholder: "اكتب ملاحظة..." }
+    : { placeholder: "Write a note..." };
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +29,7 @@ export default function ChatterInput({
       <input
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="اكتب ملاحظة..."
+        placeholder={t.placeholder}
         className="flex-1 bg-[#161B26] border border-[#2D3748] rounded-xl px-3 py-2 text-sm text-white placeholder-[#4B5563] focus:outline-none focus:border-[#0F6E56] transition-colors"
       />
       <button

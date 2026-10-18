@@ -2,11 +2,25 @@
 import { useEffect, useState, useCallback } from "react";
 import { queueCount } from "@/lib/offline/indexeddb-queue";
 import { flushQueue } from "@/lib/offline/sync-manager";
+import type { AppLocale } from "@/lib/preferences";
 
-export default function OfflineSyncBanner({ userId }: { userId: string }) {
+export default function OfflineSyncBanner({ userId, locale = "ar" }: { userId: string; locale?: AppLocale }) {
   const [isOnline, setIsOnline] = useState(true);
   const [pending, setPending] = useState(0);
   const [syncing, setSyncing] = useState(false);
+
+  const isAr = locale === "ar";
+  const t = isAr ? {
+    offline:"غير متصل — سيتم حفظ النماذج محلياً وإرسالها عند عودة الاتصال",
+    pending:(n:number)=>`${n} عنصر بانتظار المزامنة`,
+    syncing:"جارِ المزامنة...",
+    syncNow:"مزامنة الآن",
+  } : {
+    offline:"Offline — forms will be saved locally and sent once the connection returns",
+    pending:(n:number)=>`${n} item(s) awaiting sync`,
+    syncing:"Syncing...",
+    syncNow:"Sync now",
+  };
 
   const refreshCount = useCallback(async () => {
     setPending(await queueCount());
@@ -52,10 +66,10 @@ export default function OfflineSyncBanner({ userId }: { userId: string }) {
       !isOnline ? "bg-[#271E0A] border-[#4A3510] text-[#EF9F27]" : "bg-[#0F1117] border-[#1F2937] text-[#D1D5DB]"
     }`}>
       <i className={`ti ti-${!isOnline ? "wifi-off" : "cloud-upload"}`} />
-      {!isOnline ? "غير متصل — سيتم حفظ النماذج محلياً وإرسالها عند عودة الاتصال" : `${pending} عنصر بانتظار المزامنة`}
+      {!isOnline ? t.offline : t.pending(pending)}
       {isOnline && pending > 0 && (
         <button onClick={manualSync} disabled={syncing} className="text-[#0F6E56] font-medium hover:text-[#1D9E75]">
-          {syncing ? "جارِ المزامنة..." : "مزامنة الآن"}
+          {syncing ? t.syncing : t.syncNow}
         </button>
       )}
     </div>

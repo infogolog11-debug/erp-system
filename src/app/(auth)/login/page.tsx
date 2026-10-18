@@ -1,6 +1,6 @@
 // src/app/(auth)/login/page.tsx
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
@@ -8,6 +8,37 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [isPending, setIsPending] = useState(false);
+  const [isAr, setIsAr]         = useState(true);
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|;\s*)erp-locale=([^;]+)/);
+    const value = match ? decodeURIComponent(match[1]) : "ar";
+    setIsAr(value !== "en");
+  }, []);
+
+  const t = isAr ? {
+    appName:      "نظام الإدارة",
+    subtitle:     "سجّل دخولك للمتابعة",
+    emailLabel:   "البريد الإلكتروني",
+    passwordLabel:"كلمة المرور",
+    forgot:       "نسيت كلمة المرور؟",
+    signingIn:    "جارٍ تسجيل الدخول...",
+    signIn:       "تسجيل الدخول",
+    footer:       "جميع البيانات محمية ومشفرة",
+    invalidCreds: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    genericError: "تعذر تسجيل الدخول حالياً، حاول مرة أخرى",
+  } : {
+    appName:      "Management System",
+    subtitle:     "Sign in to continue",
+    emailLabel:   "Email",
+    passwordLabel:"Password",
+    forgot:       "Forgot password?",
+    signingIn:    "Signing in...",
+    signIn:       "Sign in",
+    footer:       "All data is protected and encrypted",
+    invalidCreds: "Invalid email or password",
+    genericError: "Could not sign in right now, please try again",
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,20 +54,20 @@ export default function LoginPage() {
       })) as { error?: string | null; url?: string | null } | undefined;
 
       if (res?.error) {
-        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        setError(t.invalidCreds);
         return;
       }
 
       window.location.assign(res?.url ?? "/");
     } catch {
-      setError("تعذر تسجيل الدخول حالياً، حاول مرة أخرى");
+      setError(t.genericError);
     } finally {
       setIsPending(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1117] flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-[#0F1117] flex items-center justify-center p-4" dir={isAr ? "rtl" : "ltr"}>
 
       {/* خلفية هندسية خفية */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -55,8 +86,8 @@ export default function LoginPage() {
               <circle cx="14" cy="14" r="2" fill="white"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">نظام الإدارة</h1>
-          <p className="text-sm text-[#6B7280] mt-1.5">سجّل دخولك للمتابعة</p>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">{t.appName}</h1>
+          <p className="text-sm text-[#6B7280] mt-1.5">{t.subtitle}</p>
         </div>
 
         {/* البطاقة */}
@@ -77,7 +108,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm text-[#9CA3AF] mb-2 font-medium">
-                البريد الإلكتروني
+                {t.emailLabel}
               </label>
               <input
                 type="email"
@@ -93,10 +124,10 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm text-[#9CA3AF] font-medium">
-                  كلمة المرور
+                  {t.passwordLabel}
                 </label>
                 <button type="button" className="text-xs text-[#0F6E56] hover:text-[#1D9E75] transition-colors">
-                  نسيت كلمة المرور؟
+                  {t.forgot}
                 </button>
               </div>
               <input
@@ -121,9 +152,9 @@ export default function LoginPage() {
                     <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" strokeOpacity="0.3"/>
                     <path d="M12 2a10 10 0 0110 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  جارٍ تسجيل الدخول...
+                  {t.signingIn}
                 </>
-              ) : "تسجيل الدخول"}
+              ) : t.signIn}
             </button>
 
           </form>
@@ -132,7 +163,7 @@ export default function LoginPage() {
 
         {/* تذييل */}
         <p className="text-center text-xs text-[#374151] mt-6">
-          جميع البيانات محمية ومشفرة
+          {t.footer}
         </p>
       </div>
     </div>

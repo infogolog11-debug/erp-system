@@ -8,9 +8,12 @@ import { isOverdue } from "@/lib/cfm/sla";
 import CFMListView from "@/modules/cfm/components/CFMListView";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function CFMPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?:string }> }) {
   const searchParams = await searchParamsPromise;
+  const prefs = await getRequestPreferences();
+  const isAr = prefs.locale === "ar";
   const session = await auth();
   if (!session?.user) redirect("/login");
   const orgId = session.user.organizationId;
@@ -61,34 +64,34 @@ export default async function CFMPage({ searchParams: searchParamsPromise }: { s
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-            <i className="ti ti-message-report text-[#0F6E56]" />آلية الشكاوى والتغذية الراجعة
+            <i className="ti ti-message-report text-[#0F6E56]" />{isAr ? "آلية الشكاوى والتغذية الراجعة" : "Complaint & Feedback Mechanism"}
           </h1>
-          <p className="text-[13px] text-[#6B7280] mt-1">Complaint & Feedback Mechanism — {totalCount} شكوى</p>
+          <p className="text-[13px] text-[#6B7280] mt-1">{isAr ? `آلية الشكاوى والتغذية الراجعة — ${totalCount} شكوى` : `Complaint & Feedback Mechanism — ${totalCount} complaint(s)`}</p>
         </div>
         <a href="/cfm/new" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white bg-[#0F6E56] hover:bg-[#0D5C48] rounded-lg px-4 py-2">
-          <i className="ti ti-plus" />تسجيل شكوى جديدة
+          <i className="ti ti-plus" />{isAr ? "تسجيل شكوى جديدة" : "New complaint"}
         </a>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4">
-          <div className="flex items-center gap-2 text-[#6B7280] text-[12px] mb-1"><i className="ti ti-folder-open"/>شكاوى مفتوحة</div>
+          <div className="flex items-center gap-2 text-[#6B7280] text-[12px] mb-1"><i className="ti ti-folder-open"/>{isAr ? "شكاوى مفتوحة" : "Open complaints"}</div>
           <div className="text-xl font-semibold text-white">{openCount}</div>
         </div>
         <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4">
-          <div className="flex items-center gap-2 text-[#E24B4A] text-[12px] mb-1"><i className="ti ti-clock-exclamation"/>متجاوزة المهلة</div>
+          <div className="flex items-center gap-2 text-[#E24B4A] text-[12px] mb-1"><i className="ti ti-clock-exclamation"/>{isAr ? "متجاوزة المهلة" : "Overdue"}</div>
           <div className="text-xl font-semibold text-white">{overdueCount}</div>
         </div>
         <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4">
-          <div className="flex items-center gap-2 text-[#EF9F27] text-[12px] mb-1"><i className="ti ti-shield-lock"/>شكاوى حساسة</div>
+          <div className="flex items-center gap-2 text-[#EF9F27] text-[12px] mb-1"><i className="ti ti-shield-lock"/>{isAr ? "شكاوى حساسة" : "Sensitive complaints"}</div>
           <div className="text-xl font-semibold text-white">{sensitiveCount}</div>
         </div>
       </div>
 
-      <CFMListView complaints={visible as any} />
+      <CFMListView complaints={visible as any} locale={prefs.locale} />
       <PaginationBar
         basePath="/cfm" currentPage={page} hasNextPage={hasNextPage}
-        totalCount={totalCount} pageSize={limit}
+        totalCount={totalCount} pageSize={limit} locale={prefs.locale}
       />
     </div>
   );

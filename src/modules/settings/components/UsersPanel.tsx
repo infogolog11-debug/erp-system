@@ -2,13 +2,21 @@
 import { useState, useTransition } from "react";
 import { updateUser, toggleUser, resetPassword } from "@/modules/settings/user-actions";
 import type { UserRole } from "@/types/db";
+import type { AppLocale } from "@/lib/preferences";
 
 type User = { id:string; email:string; name:string; nameAr:string; role:string; isActive:boolean; createdAt:string };
 const ROLES = ["admin","finance_manager","program_manager","hr_manager","procurement_officer","warehouse_manager","viewer"];
-const ROLE_LABEL: Record<string,string> = {
-  admin:"مدير النظام", finance_manager:"المالية", program_manager:"مدير برامج",
-  hr_manager:"الموارد البشرية", procurement_officer:"المشتريات",
-  warehouse_manager:"المخزون", viewer:"قارئ", super_admin:"سوبر آدمن",
+const ROLE_LABEL: Record<AppLocale, Record<string,string>> = {
+  ar: {
+    admin:"مدير النظام", finance_manager:"المالية", program_manager:"مدير برامج",
+    hr_manager:"الموارد البشرية", procurement_officer:"المشتريات",
+    warehouse_manager:"المخزون", viewer:"قارئ", super_admin:"سوبر آدمن",
+  },
+  en: {
+    admin:"System admin", finance_manager:"Finance", program_manager:"Program manager",
+    hr_manager:"HR manager", procurement_officer:"Procurement officer",
+    warehouse_manager:"Warehouse manager", viewer:"Viewer", super_admin:"Super admin",
+  },
 };
 const ROLE_COLOR: Record<string,string> = {
   admin:"bg-[#2A1215] text-[#E24B4A] border-[#4A1C20]",
@@ -20,7 +28,47 @@ const ROLE_COLOR: Record<string,string> = {
   viewer:"bg-[#161B26] text-[#6B7280] border-[#2D3748]",
 };
 
-export default function UsersPanel({ orgId, users:initial }: { orgId:string; users:User[] }) {
+export default function UsersPanel({ orgId, users:initial, locale = "ar" }: { orgId:string; users:User[]; locale?:AppLocale }) {
+  const isAr = locale === "ar";
+  const roleLabel = ROLE_LABEL[locale] ?? ROLE_LABEL.ar;
+  const dateLocale = isAr ? "ar" : "en-US";
+  const t = isAr
+    ? {
+        title: "إدارة المستخدمين",
+        userCount: (n: number) => `${n} مستخدم في المنظمة`,
+        error: "خطأ",
+        nameArPlaceholder: "الاسم بالعربي",
+        nameEnPlaceholder: "الاسم بالإنجليزي",
+        headers: ["المستخدم","البريد الإلكتروني","الدور","الحالة","تاريخ الإنشاء","إجراءات"],
+        save: "حفظ",
+        cancel: "إلغاء",
+        edit: "تعديل",
+        disable: "تعطيل",
+        enable: "تفعيل",
+        resetPassword: "إعادة تعيين كلمة المرور",
+        active: "نشط",
+        inactive: "معطّل",
+        tempPassword: "كلمة المرور المؤقتة:",
+        tempPasswordHint: "تختفي بعد 15 ثانية",
+      }
+    : {
+        title: "User management",
+        userCount: (n: number) => `${n} users in the organization`,
+        error: "Error",
+        nameArPlaceholder: "Arabic name",
+        nameEnPlaceholder: "English name",
+        headers: ["User","Email","Role","Status","Created at","Actions"],
+        save: "Save",
+        cancel: "Cancel",
+        edit: "Edit",
+        disable: "Disable",
+        enable: "Enable",
+        resetPassword: "Reset password",
+        active: "Active",
+        inactive: "Disabled",
+        tempPassword: "Temporary password:",
+        tempPasswordHint: "Disappears after 15 seconds",
+      };
   const [users, setUsers]       = useState(initial);
   const [editing, setEditing]   = useState<string|null>(null);
   const [form, setForm]         = useState<Partial<User>>({});
@@ -39,7 +87,7 @@ export default function UsersPanel({ orgId, users:initial }: { orgId:string; use
       if (res.success) {
         setUsers(p => p.map(u => u.id === id ? { ...u, ...form } : u));
         setEditing(null);
-      } else setError(res.error ?? "خطأ");
+      } else setError(res.error ?? t.error);
     });
   }
 
@@ -64,9 +112,9 @@ export default function UsersPanel({ orgId, users:initial }: { orgId:string; use
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-          <i className="ti ti-users text-[#0F6E56]" />إدارة المستخدمين
+          <i className="ti ti-users text-[#0F6E56]" />{t.title}
         </h1>
-        <p className="text-sm text-[#6B7280] mt-1">{users.length} مستخدم في المنظمة</p>
+        <p className="text-sm text-[#6B7280] mt-1">{t.userCount(users.length)}</p>
       </div>
       {error && <p className="text-xs text-[#E24B4A] flex items-center gap-1"><i className="ti ti-alert-circle" />{error}</p>}
 
@@ -74,7 +122,7 @@ export default function UsersPanel({ orgId, users:initial }: { orgId:string; use
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#1F2937] bg-[#161B26]">
-              {["المستخدم","البريد الإلكتروني","الدور","الحالة","تاريخ الإنشاء","إجراءات"].map(h => (
+              {t.headers.map(h => (
                 <th key={h} className="text-right text-xs text-[#6B7280] font-medium px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -88,9 +136,9 @@ export default function UsersPanel({ orgId, users:initial }: { orgId:string; use
                     {isEditing ? (
                       <div className="space-y-1.5">
                         <input value={form.nameAr ?? ""} onChange={e => setForm(p => ({...p, nameAr:e.target.value}))}
-                          placeholder="الاسم بالعربي" className="w-full bg-[#161B26] border border-[#EF9F27] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none" />
+                          placeholder={t.nameArPlaceholder} className="w-full bg-[#161B26] border border-[#EF9F27] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none" />
                         <input value={form.name ?? ""} onChange={e => setForm(p => ({...p, name:e.target.value}))}
-                          placeholder="الاسم بالإنجليزي" className="w-full bg-[#161B26] border border-[#2D3748] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none" />
+                          placeholder={t.nameEnPlaceholder} className="w-full bg-[#161B26] border border-[#2D3748] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none" />
                       </div>
                     ) : (
                       <div>
@@ -104,43 +152,43 @@ export default function UsersPanel({ orgId, users:initial }: { orgId:string; use
                     {isEditing ? (
                       <select value={form.role ?? u.role} onChange={e => setForm(p => ({...p, role:e.target.value}))}
                         className="bg-[#161B26] border border-[#EF9F27] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
-                        {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
+                        {ROLES.map(r => <option key={r} value={r}>{roleLabel[r] ?? r}</option>)}
                       </select>
                     ) : (
                       <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ${ROLE_COLOR[u.role] ?? ""}`}>
-                        {ROLE_LABEL[u.role] ?? u.role}
+                        {roleLabel[u.role] ?? u.role}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
                       u.isActive ? "bg-[#001A12] text-[#1D9E75] border-[#0F3D28]" : "bg-[#161B26] text-[#4B5563] border-[#2D3748]"
-                    }`}>{u.isActive ? "نشط" : "معطّل"}</span>
+                    }`}>{u.isActive ? t.active : t.inactive}</span>
                   </td>
                   <td className="px-4 py-3 text-[#4B5563] text-xs">
-                    {new Date(u.createdAt).toLocaleDateString("ar")}
+                    {new Date(u.createdAt).toLocaleDateString(dateLocale)}
                   </td>
                   <td className="px-4 py-3">
                     {isEditing ? (
                       <div className="flex gap-1.5">
                         <button onClick={() => save(u.id)} disabled={isPending}
                           className="text-xs bg-[#0F6E56] text-white px-2.5 py-1.5 rounded-lg disabled:opacity-50">
-                          حفظ
+                          {t.save}
                         </button>
                         <button onClick={() => setEditing(null)} className="text-xs text-[#6B7280] px-2 py-1.5 rounded-lg hover:text-white">
-                          إلغاء
+                          {t.cancel}
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
-                        <button onClick={() => startEdit(u)} title="تعديل" className="p-1.5 text-[#4B5563] hover:text-[#EF9F27] rounded-lg transition-all">
+                        <button onClick={() => startEdit(u)} title={t.edit} className="p-1.5 text-[#4B5563] hover:text-[#EF9F27] rounded-lg transition-all">
                           <i className="ti ti-edit text-[14px]" />
                         </button>
-                        <button onClick={() => toggle(u.id, !u.isActive)} title={u.isActive ? "تعطيل" : "تفعيل"}
+                        <button onClick={() => toggle(u.id, !u.isActive)} title={u.isActive ? t.disable : t.enable}
                           className={`p-1.5 rounded-lg transition-all ${u.isActive ? "text-[#1D9E75] hover:text-[#E24B4A]" : "text-[#4B5563] hover:text-[#1D9E75]"}`}>
                           <i className={`ti ${u.isActive ? "ti-toggle-right" : "ti-toggle-left"} text-[16px]`} />
                         </button>
-                        <button onClick={() => doReset(u.id)} title="إعادة تعيين كلمة المرور"
+                        <button onClick={() => doReset(u.id)} title={t.resetPassword}
                           className="p-1.5 text-[#4B5563] hover:text-[#378ADD] rounded-lg transition-all">
                           <i className="ti ti-key text-[14px]" />
                         </button>
@@ -148,9 +196,9 @@ export default function UsersPanel({ orgId, users:initial }: { orgId:string; use
                     )}
                     {resetMsg[u.id] && (
                       <div className="mt-1.5 p-2 bg-[#0A1628] border border-[#1A3060] rounded-lg">
-                        <p className="text-[10px] text-[#6B7280]">كلمة المرور المؤقتة:</p>
+                        <p className="text-[10px] text-[#6B7280]">{t.tempPassword}</p>
                         <p className="text-xs font-mono font-bold text-[#378ADD]">{resetMsg[u.id]}</p>
-                        <p className="text-[10px] text-[#4B5563] mt-0.5">تختفي بعد 15 ثانية</p>
+                        <p className="text-[10px] text-[#4B5563] mt-0.5">{t.tempPasswordHint}</p>
                       </div>
                     )}
                   </td>

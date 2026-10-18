@@ -5,6 +5,7 @@ import { db }      from "@/db";
 import { payrollRuns, payrollLines, employees, contracts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
+import { getRequestPreferences } from "@/lib/preferences";
 import PayrollDetailClient from "@/modules/hr/components/PayrollDetailClient";
 
 export default async function PayrollDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
@@ -17,6 +18,9 @@ export default async function PayrollDetailPage({ params: paramsPromise }: { par
   const __perm = await getUserPermission(session.user.id, orgId, "hr", role);
   if (!canView(__perm)) redirect("/");
 
+  const prefs = await getRequestPreferences();
+  const isAr  = prefs.locale === "ar";
+
   const run = await db.query.payrollRuns.findFirst({
     where: and(eq(payrollRuns.id, params.id), eq(payrollRuns.organizationId, orgId)),
   });
@@ -27,7 +31,9 @@ export default async function PayrollDetailPage({ params: paramsPromise }: { par
     with: { employee: { columns:{firstNameAr:true,lastNameAr:true,code:true,email:true} } },
   });
 
-  const monthNames = ["","يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const monthNames = isAr
+    ? ["","يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]
+    : ["","January","February","March","April","May","June","July","August","September","October","November","December"];
 
   return (
     <PayrollDetailClient
@@ -72,6 +78,7 @@ export default async function PayrollDetailPage({ params: paramsPromise }: { par
       orgId={orgId}
       userId={userId}
       role={role}
+      locale={prefs.locale}
     />
   );
 }

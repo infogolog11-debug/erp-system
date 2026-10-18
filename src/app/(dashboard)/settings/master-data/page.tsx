@@ -8,10 +8,12 @@ import {
 } from "@/db/schema";
 import { eq }       from "drizzle-orm";
 import MasterDataPage from "@/modules/settings/components/MasterDataPage";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function MasterDataAdminPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const prefs   = await getRequestPreferences();
   const role    = session.user.role;
   const orgId   = session.user.organizationId;
   if (role !== "admin" && role !== "super_admin") redirect("/");
@@ -39,6 +41,7 @@ export default async function MasterDataAdminPage() {
         warehouses:     warehouses_,
         donors:         donors_,
       }}
+      locale={prefs.locale}
     />
   );
 }

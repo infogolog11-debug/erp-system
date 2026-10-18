@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { chatterMessages, users } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import ChatterInput from "./ChatterInput";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function ChatterBox({
   tableName, recordId, organizationId, userId,
@@ -16,11 +17,30 @@ export default async function ChatterBox({
     limit: 20,
   });
 
+  const prefs = await getRequestPreferences();
+  const isAr = prefs.locale === "ar";
+  const dateTag = isAr ? "ar-SA" : "en-US";
+  const t = isAr ? {
+    title: "المراسلات والملاحظات",
+    empty: "لا توجد مراسلات بعد",
+    user: "مستخدم",
+    avatar: "م",
+    approval: "موافقة",
+    rejection: "رفض",
+  } : {
+    title: "Messages & notes",
+    empty: "No messages yet",
+    user: "User",
+    avatar: "U",
+    approval: "Approval",
+    rejection: "Rejection",
+  };
+
   return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-5 flex flex-col gap-4">
       <h3 className="text-sm font-semibold text-white flex items-center gap-2">
         <i className="ti ti-message-dots text-[16px] text-[#4B5563]" aria-hidden="true" />
-        المراسلات والملاحظات
+        {t.title}
         <span className="text-xs font-normal text-[#4B5563] bg-[#161B26] px-2 py-0.5 rounded-md">
           {messages.length}
         </span>
@@ -31,22 +51,23 @@ export default async function ChatterBox({
         recordId={recordId}
         organizationId={organizationId}
         userId={userId}
+        locale={prefs.locale}
       />
 
       <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto">
         {messages.length === 0 ? (
-          <p className="text-xs text-[#374151] text-center py-4">لا توجد مراسلات بعد</p>
+          <p className="text-xs text-[#374151] text-center py-4">{t.empty}</p>
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className="flex gap-3">
               <div className="w-7 h-7 rounded-lg bg-[#0F6E56]/20 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-[#1D9E75]">
-                م
+                {t.avatar}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-[#D1D5DB]">مستخدم</span>
+                  <span className="text-xs font-medium text-[#D1D5DB]">{t.user}</span>
                   <span className="text-[10px] text-[#374151]">
-                    {new Date(msg.createdAt).toLocaleDateString("ar-SA", {
+                    {new Date(msg.createdAt).toLocaleDateString(dateTag, {
                       month:"short", day:"numeric", hour:"2-digit", minute:"2-digit",
                     })}
                   </span>
@@ -56,7 +77,7 @@ export default async function ChatterBox({
                         ? "bg-[#001A12] text-[#1D9E75]"
                         : "bg-[#2A1215] text-[#E24B4A]"
                     }`}>
-                      {msg.messageType === "approval" ? "موافقة" : "رفض"}
+                      {msg.messageType === "approval" ? t.approval : t.rejection}
                     </span>
                   )}
                 </div>

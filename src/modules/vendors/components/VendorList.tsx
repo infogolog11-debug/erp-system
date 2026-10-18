@@ -72,7 +72,7 @@ export default function VendorList({ vendors, locale = "ar" }: { vendors: Vendor
                   {v.nameAr && <p className="text-[11px] text-[#4B5563] mt-0.5">{v.nameAr}</p>}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-[#4B5563]">{v.code}</td>
-                <td className="px-4 py-3 text-xs text-[#6B7280]">{v.vendorType.replaceAll("_", " ")}</td>
+                <td className="px-4 py-3 text-xs text-[#6B7280]">{(v.vendorType ?? "").replaceAll("_", " ")}</td>
                 <td className="px-4 py-3 w-28"><ScoreBar score={Number(v.overallScore) || 0} /></td>
                 <td className="px-4 py-3">
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${st.bg} ${st.text}`}>{st.label}</span>

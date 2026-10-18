@@ -5,11 +5,13 @@ import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { getUserPermission, canView } from "@/lib/permissions/service";
 import CFMDetailView from "@/modules/cfm/components/CFMDetailView";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function ComplaintDetailPage({
   params: paramsPromise,
 }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
+  const prefs = await getRequestPreferences();
   const session = await auth();
   if (!session?.user) notFound();
   const orgId = session.user.organizationId;
@@ -30,8 +32,8 @@ export default async function ComplaintDetailPage({
       <div className="max-w-2xl mx-auto">
         <div className="bg-[#2A1215] border border-[#4A1C20] rounded-2xl p-8 text-center space-y-2">
           <i className="ti ti-lock text-3xl text-[#E24B4A]"/>
-          <p className="text-white font-medium">هذه شكوى حساسة — الوصول مقيَّد</p>
-          <p className="text-[13px] text-[#9CA3AF]">يُرجى التواصل مع مسؤول الحماية أو الإدارة العليا للاطلاع على التفاصيل</p>
+          <p className="text-white font-medium">{prefs.locale === "ar" ? "هذه شكوى حساسة — الوصول مقيَّد" : "This is a sensitive complaint — restricted access"}</p>
+          <p className="text-[13px] text-[#9CA3AF]">{prefs.locale === "ar" ? "يُرجى التواصل مع مسؤول الحماية أو الإدارة العليا للاطلاع على التفاصيل" : "Please contact the protection officer or senior management to view the details"}</p>
         </div>
       </div>
     );
@@ -39,5 +41,5 @@ export default async function ComplaintDetailPage({
 
   const orgUsers = await db.query.users.findMany({ where: eq(users.organizationId, orgId), columns:{id:true,firstName:true,lastName:true} });
 
-  return <CFMDetailView complaint={complaint as any} orgUsers={orgUsers} userId={session.user.id} organizationId={orgId} />;
+  return <CFMDetailView complaint={complaint as any} orgUsers={orgUsers} userId={session.user.id} organizationId={orgId} locale={prefs.locale} />;
 }

@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getRequestPreferences } from "@/lib/preferences";
 import { db } from "@/db";
 import { grants, grantBudgetLines, beneficiaries, distributions } from "@/db/schema";
 import { eq, and, count, sum } from "drizzle-orm";
@@ -19,6 +20,7 @@ export default async function DonorReportPage({
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "reports", session.user.role);
   if (!canView(__perm)) redirect("/");
+  const prefs = await getRequestPreferences();
 
   const grant = await db.query.grants.findFirst({
     where: eq(grants.id, params.grantId),
@@ -70,6 +72,7 @@ export default async function DonorReportPage({
       donorName={grant.donor?.nameAr || grant.donor?.name || "—"}
       grantId={grant.id}
       availableTemplates={["usaid_sf425","echo_single_form","unhcr_ipr"]}
+      locale={prefs.locale}
     />
   );
 }

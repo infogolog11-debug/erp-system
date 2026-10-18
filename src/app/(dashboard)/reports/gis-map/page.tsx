@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getRequestPreferences } from "@/lib/preferences";
 import { db } from "@/db";
 import { beneficiaries, warehouses } from "@/db/schema";
 import { eq, and, isNotNull, count } from "drizzle-orm";
@@ -13,6 +14,8 @@ export default async function GISMapPage() {
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "reports", session.user.role);
   if (!canView(__perm)) redirect("/");
+  const prefs = await getRequestPreferences();
+  const isAr = prefs.locale === "ar";
 
   const [mappedBeneficiaries, mappedWarehouses, [{ cnt: totalBeneficiaries }]] = await Promise.all([
     db.query.beneficiaries.findMany({
@@ -30,13 +33,15 @@ export default async function GISMapPage() {
     <div className="space-y-4 max-w-6xl mx-auto">
       <div>
         <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-          <i className="ti ti-map-pin text-[#0F6E56]" />الخريطة الجغرافية للعمليات
+          <i className="ti ti-map-pin text-[#0F6E56]" />{isAr ? "الخريطة الجغرافية للعمليات" : "Operations geographic map"}
         </h1>
         <p className="text-[13px] text-[#6B7280] mt-1">
-          GIS Mapping — {mappedBeneficiaries.length} من {totalBeneficiaries} مستفيد لديهم إحداثيات مسجّلة · {mappedWarehouses.length} مستودع
+          {isAr
+            ? `GIS Mapping — ${mappedBeneficiaries.length} من ${totalBeneficiaries} مستفيد لديهم إحداثيات مسجّلة · ${mappedWarehouses.length} مستودع`
+            : `GIS Mapping — ${mappedBeneficiaries.length} of ${totalBeneficiaries} beneficiaries have registered coordinates · ${mappedWarehouses.length} warehouses`}
         </p>
       </div>
-      <GISMapView beneficiaries={mappedBeneficiaries as any} warehouses={mappedWarehouses as any} />
+      <GISMapView beneficiaries={mappedBeneficiaries as any} warehouses={mappedWarehouses as any} locale={prefs.locale} />
     </div>
   );
 }

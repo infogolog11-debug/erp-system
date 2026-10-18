@@ -3,26 +3,73 @@ import { useState, useTransition } from "react";
 import { setUserPermission, resetUserPermission } from "@/modules/settings/permissions-actions";
 import { MODULES, PERMISSIONS, ROLE_DEFAULTS } from "@/lib/permissions/defaults";
 import type { ModuleCode, PermissionLevel } from "@/lib/permissions/service";
+import type { AppLocale } from "@/lib/preferences";
 
 type User = { id:string; email:string; name:string; role:string };
 type ExistingPerm = { userId:string; moduleCode:string; permission:string };
 
-const ROLE_LABELS: Record<string,string> = {
-  super_admin:"مدير عام", admin:"مدير نظام", finance:"مالية",
-  hr:"موارد بشرية", procurement:"مشتريات", inventory:"مخازن", viewer:"مشاهد",
+const ROLE_LABELS: Record<AppLocale, Record<string,string>> = {
+  ar: {
+    super_admin:"مدير عام", admin:"مدير نظام", finance:"مالية",
+    hr:"موارد بشرية", procurement:"مشتريات", inventory:"مخازن", viewer:"مشاهد",
+  },
+  en: {
+    super_admin:"Super admin", admin:"System admin", finance:"Finance",
+    hr:"Human resources", procurement:"Procurement", inventory:"Inventory", viewer:"Viewer",
+  },
+};
+const MODULE_LABELS: Record<AppLocale, Record<string,string>> = {
+  ar: {
+    grants:"المنح", procurement:"المشتريات", vendors:"الموردون", hr:"الموارد البشرية",
+    inventory:"المخزون والأصول", accounting:"المحاسبة", reports:"التقارير", settings:"الإعدادات",
+  },
+  en: {
+    grants:"Grants", procurement:"Procurement", vendors:"Vendors", hr:"Human resources",
+    inventory:"Inventory & assets", accounting:"Accounting", reports:"Reports", settings:"Settings",
+  },
 };
 const PERM_BG: Record<string,string> = {
   none:"bg-[#161B26] text-[#2D3748]",   view:"bg-[#161B26] text-[#6B7280]",
   create:"bg-[#0A1628] text-[#378ADD]", edit:"bg-[#1A1400] text-[#EF9F27]",
   approve:"bg-[#1A0A2E] text-[#A855F7]",admin:"bg-[#001A12] text-[#1D9E75]",
 };
-const PERM_LABEL: Record<string,string> = {
-  none:"لا شيء", view:"عرض", create:"إنشاء", edit:"تعديل", approve:"اعتماد", admin:"مدير",
+const PERM_LABEL: Record<AppLocale, Record<string,string>> = {
+  ar: { none:"لا شيء", view:"عرض", create:"إنشاء", edit:"تعديل", approve:"اعتماد", admin:"مدير" },
+  en: { none:"None", view:"View", create:"Create", edit:"Edit", approve:"Approve", admin:"Admin" },
 };
 
-export default function PermissionsPanel({ orgId, grantedBy, users, existingPerms }: {
-  orgId:string; grantedBy:string; users:User[]; existingPerms:ExistingPerm[];
+export default function PermissionsPanel({ orgId, grantedBy, users, existingPerms, locale = "ar" }: {
+  orgId:string; grantedBy:string; users:User[]; existingPerms:ExistingPerm[]; locale?:AppLocale;
 }) {
+  const isAr = locale === "ar";
+  const roleLabels = ROLE_LABELS[locale] ?? ROLE_LABELS.ar;
+  const moduleLabels = MODULE_LABELS[locale] ?? MODULE_LABELS.ar;
+  const permLabel = PERM_LABEL[locale] ?? PERM_LABEL.ar;
+  const t = isAr
+    ? {
+        title: "صلاحيات المستخدمين",
+        subtitle: "تحكم دقيق في وصول كل مستخدم لكل وحدة — يتجاوز الـ role الافتراضي",
+        error: "خطأ",
+        usersList: "المستخدمون",
+        custom: "مخصص",
+        default: "افتراضي",
+        legendHint: "الأزرار الذهبية = مخصصة · الرمادية = من الـ role الافتراضي",
+        resetToDefault: "إعادة تعيين للافتراضي",
+        selectUser: "اختر مستخدماً من القائمة",
+        selectUserHint: "لعرض وتعديل صلاحياته",
+      }
+    : {
+        title: "User permissions",
+        subtitle: "Fine-grained control over each user's access to every module — overrides the default role",
+        error: "Error",
+        usersList: "Users",
+        custom: "Custom",
+        default: "Default",
+        legendHint: "Gold buttons = custom · Grey = from the default role",
+        resetToDefault: "Reset to default",
+        selectUser: "Select a user from the list",
+        selectUserHint: "To view and edit their permissions",
+      };
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [perms, setPerms] = useState<Record<string,Record<string,string>>>(() => {
     const map: Record<string,Record<string,string>> = {};
@@ -65,7 +112,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
           setPerms(p => ({ ...p, [userId]: { ...(p[userId]??{}), [moduleCode]:permission } }));
         }
       }
-      if (!res.success) setMsg(res.error ?? "خطأ");
+      if (!res.success) setMsg(res.error ?? t.error);
       setSaving(null);
     });
   }
@@ -76,10 +123,10 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-          <i className="ti ti-shield-lock text-[#0F6E56]" />صلاحيات المستخدمين
+          <i className="ti ti-shield-lock text-[#0F6E56]" />{t.title}
         </h1>
         <p className="text-sm text-[#6B7280] mt-1">
-          تحكم دقيق في وصول كل مستخدم لكل وحدة — يتجاوز الـ role الافتراضي
+          {t.subtitle}
         </p>
       </div>
 
@@ -88,7 +135,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
       <div className="flex gap-5">
         {/* قائمة المستخدمين */}
         <div className="w-56 shrink-0 space-y-1">
-          <p className="text-[10px] font-semibold text-[#4B5563] uppercase tracking-wider px-2 mb-2">المستخدمون</p>
+          <p className="text-[10px] font-semibold text-[#4B5563] uppercase tracking-wider px-2 mb-2">{t.usersList}</p>
           {nonAdmins.map(u => (
             <button key={u.id} onClick={() => setSelectedUser(u)}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all text-right ${
@@ -101,7 +148,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
               </div>
               <div className="flex-1 min-w-0 text-right">
                 <p className="text-xs font-medium truncate">{u.name}</p>
-                <p className="text-[10px] text-[#4B5563]">{ROLE_LABELS[u.role] ?? u.role}</p>
+                <p className="text-[10px] text-[#4B5563]">{roleLabels[u.role] ?? u.role}</p>
               </div>
             </button>
           ))}
@@ -116,11 +163,11 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">{selectedUser.name}</p>
-                <p className="text-xs text-[#4B5563]">{selectedUser.email} · {ROLE_LABELS[selectedUser.role]}</p>
+                <p className="text-xs text-[#4B5563]">{selectedUser.email} · {roleLabels[selectedUser.role]}</p>
               </div>
               <div className="mr-auto text-[11px] text-[#4B5563] flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#EF9F27]" />مخصص
-                <span className="w-2 h-2 rounded-full bg-[#1F2937] mr-2" />افتراضي
+                <span className="w-2 h-2 rounded-full bg-[#EF9F27]" />{t.custom}
+                <span className="w-2 h-2 rounded-full bg-[#1F2937] mr-2" />{t.default}
               </div>
             </div>
 
@@ -134,7 +181,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
                   <div key={mod.code} className="flex items-center gap-4 px-5 py-3.5">
                     <div className="flex items-center gap-2.5 w-44 shrink-0">
                       <i className={`ti ${mod.icon} text-[15px] text-[#4B5563]`} />
-                      <span className="text-sm text-[#D1D5DB]">{mod.label}</span>
+                      <span className="text-sm text-[#D1D5DB]">{moduleLabels[mod.code] ?? mod.label}</span>
                     </div>
 
                     {/* أزرار الصلاحيات */}
@@ -156,7 +203,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
                             }`}>
                             {isSavingThis && isActive
                               ? <span className="inline-block w-3 h-3 border border-current rounded-full animate-spin border-t-transparent" />
-                              : p.label
+                              : permLabel[p.value] ?? p.label
                             }
                           </button>
                         );
@@ -167,10 +214,10 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
                     <div className="w-16 text-left shrink-0">
                       {custom ? (
                         <span className="text-[10px] text-[#EF9F27] flex items-center gap-1">
-                          <i className="ti ti-edit text-[11px]" />مخصص
+                          <i className="ti ti-edit text-[11px]" />{t.custom}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-[#2D3748]">افتراضي</span>
+                        <span className="text-[10px] text-[#2D3748]">{t.default}</span>
                       )}
                     </div>
                   </div>
@@ -181,7 +228,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
             {/* إعادة تعيين كل الصلاحيات */}
             <div className="px-5 py-4 border-t border-[#1F2937] flex items-center justify-between">
               <p className="text-xs text-[#4B5563]">
-                الأزرار الذهبية = مخصصة · الرمادية = من الـ role الافتراضي
+                {t.legendHint}
               </p>
               <button
                 onClick={() => {
@@ -200,7 +247,7 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
                 }}
                 disabled={isPending}
                 className="text-xs text-[#E24B4A] border border-[#4A1C20] bg-[#2A1215] hover:bg-[#3A1A1E] px-3 py-1.5 rounded-lg transition-all disabled:opacity-50">
-                <i className="ti ti-refresh mr-1" />إعادة تعيين للافتراضي
+                <i className="ti ti-refresh mr-1" />{t.resetToDefault}
               </button>
             </div>
           </div>
@@ -208,8 +255,8 @@ export default function PermissionsPanel({ orgId, grantedBy, users, existingPerm
           <div className="flex-1 bg-[#0F1117] border border-[#1F2937] rounded-2xl flex items-center justify-center">
             <div className="text-center py-16">
               <i className="ti ti-user-search text-[48px] text-[#2D3748]" />
-              <p className="text-sm text-[#4B5563] mt-3">اختر مستخدماً من القائمة</p>
-              <p className="text-xs text-[#2D3748] mt-1">لعرض وتعديل صلاحياته</p>
+              <p className="text-sm text-[#4B5563] mt-3">{t.selectUser}</p>
+              <p className="text-xs text-[#2D3748] mt-1">{t.selectUserHint}</p>
             </div>
           </div>
         )}

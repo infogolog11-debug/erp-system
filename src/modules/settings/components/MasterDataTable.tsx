@@ -1,6 +1,7 @@
 // جدول بيانات أساسية قابل للتعديل (departments, currencies, costCenters, etc.)
 "use client";
 import { useState, useTransition } from "react";
+import type { AppLocale } from "@/lib/preferences";
 
 type Column = { key: string; label: string; editable?: boolean; type?: "text"|"number"|"badge" };
 type Row    = Record<string, any> & { id: string };
@@ -15,11 +16,16 @@ type Props = {
   onToggle?:  (id: string, isActive: boolean) => Promise<{ success:boolean }>;
   onAdd?:     () => void;
   addLabel?:  string;
+  locale?:    AppLocale;
 };
 
 export default function MasterDataTable({
-  title, titleAr, icon, columns, rows, onSave, onToggle, onAdd, addLabel
+  title, titleAr, icon, columns, rows, onSave, onToggle, onAdd, addLabel, locale = "ar"
 }: Props) {
+  const isAr = locale === "ar";
+  const t = isAr
+    ? { add: "إضافة", action: "إجراء", active: "نشط", inactive: "معطّل", save: "حفظ", cancel: "إلغاء", empty: "لا توجد بيانات", saveError: "خطأ في الحفظ" }
+    : { add: "Add", action: "Action", active: "Active", inactive: "Disabled", save: "Save", cancel: "Cancel", empty: "No data", saveError: "Save error" };
   const [editing, setEditing]   = useState<string | null>(null);
   const [edits,   setEdits]     = useState<Record<string,string>>({});
   const [isPending, start]      = useTransition();
@@ -38,7 +44,7 @@ export default function MasterDataTable({
       if (res.success) {
         setEditing(null); setSuccess(id);
         setTimeout(() => setSuccess(null), 2500);
-      } else setError(res.error ?? "خطأ في الحفظ");
+      } else setError(res.error ?? t.saveError);
     });
   }
 
@@ -46,14 +52,14 @@ export default function MasterDataTable({
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#1F2937]">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-          <i className={`ti ${icon} text-[#0F6E56]`} />{titleAr}
+          <i className={`ti ${icon} text-[#0F6E56]`} />{isAr ? titleAr : title}
         </h2>
         <div className="flex items-center gap-2">
           {error && <p className="text-xs text-[#E24B4A]">{error}</p>}
           {onAdd && (
             <button onClick={onAdd}
               className="flex items-center gap-1.5 text-xs bg-[#0F6E56] hover:bg-[#1D9E75] text-white px-3 py-1.5 rounded-lg transition-all">
-              <i className="ti ti-plus" />{addLabel ?? "إضافة"}
+              <i className="ti ti-plus" />{addLabel ?? t.add}
             </button>
           )}
         </div>
@@ -68,7 +74,7 @@ export default function MasterDataTable({
                   {col.label}
                 </th>
               ))}
-              <th className="text-right text-xs text-[#6B7280] font-medium px-4 py-3 w-24">إجراء</th>
+              <th className="text-right text-xs text-[#6B7280] font-medium px-4 py-3 w-24">{t.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -97,7 +103,7 @@ export default function MasterDataTable({
                             ? "bg-[#001A12] text-[#1D9E75] border-[#0F3D28]"
                             : "bg-[#161B26] text-[#4B5563] border-[#2D3748]"
                         }`}>
-                          {row[col.key] === true ? "نشط" : row[col.key] === false ? "معطّل" : row[col.key]}
+                          {row[col.key] === true ? t.active : row[col.key] === false ? t.inactive : row[col.key]}
                         </span>
                       ) : (
                         <span className="text-[#D1D5DB]">{row[col.key] ?? "—"}</span>
@@ -110,11 +116,11 @@ export default function MasterDataTable({
                         <>
                           <button onClick={() => save(row.id)} disabled={isPending}
                             className="text-xs bg-[#0F6E56] hover:bg-[#1D9E75] text-white px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50">
-                            {isPending ? "..." : "حفظ"}
+                            {isPending ? "..." : t.save}
                           </button>
                           <button onClick={() => { setEditing(null); setError(""); }}
                             className="text-xs text-[#6B7280] hover:text-white px-2 py-1.5 rounded-lg transition-all">
-                            إلغاء
+                            {t.cancel}
                           </button>
                         </>
                       ) : (
@@ -140,7 +146,7 @@ export default function MasterDataTable({
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={columns.length + 1} className="text-center py-10 text-[#4B5563] text-sm">لا توجد بيانات</td></tr>
+              <tr><td colSpan={columns.length + 1} className="text-center py-10 text-[#4B5563] text-sm">{t.empty}</td></tr>
             )}
           </tbody>
         </table>

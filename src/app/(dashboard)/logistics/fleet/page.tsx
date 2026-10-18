@@ -7,9 +7,12 @@ import { redirect } from "next/navigation";
 import FleetListView from "@/modules/fleet/components/FleetListView";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function FleetPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?: string }> }) {
   const searchParams = await searchParamsPromise;
+  const prefs = await getRequestPreferences();
+  const isAr = prefs.locale === "ar";
   const session = await auth();
   if (!session?.user) redirect("/login");
   const orgId = session.user.organizationId;
@@ -53,19 +56,19 @@ export default async function FleetPage({ searchParams: searchParamsPromise }: {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-            <i className="ti ti-truck text-[#0F6E56]" />إدارة الأسطول
+            <i className="ti ti-truck text-[#0F6E56]" />{isAr ? "إدارة الأسطول" : "Fleet management"}
           </h1>
-          <p className="text-[13px] text-[#6B7280] mt-1">Logistics / Fleet Management — {totalCount} مركبة</p>
+          <p className="text-[13px] text-[#6B7280] mt-1">{isAr ? `اللوجستيات / إدارة الأسطول — ${totalCount} مركبة` : `Logistics / Fleet Management — ${totalCount} vehicle(s)`}</p>
         </div>
       </div>
       <FleetListView
         vehicles={allVehicles as any} drivers={allDrivers}
         alertVehicles={alertVehicles as any} alertDrivers={alertDrivers as any}
-        organizationId={orgId} userId={session.user.id}
+        organizationId={orgId} userId={session.user.id} locale={prefs.locale}
       />
       <PaginationBar
         basePath="/logistics/fleet" currentPage={page} hasNextPage={hasNextPage}
-        totalCount={totalCount} pageSize={limit}
+        totalCount={totalCount} pageSize={limit} locale={prefs.locale}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import { auth }    from "@/auth";
 import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getRequestPreferences } from "@/lib/preferences";
 import { redirect } from "next/navigation";
 import { db }      from "@/db";
 import { donors, grants, grantBudgetLines } from "@/db/schema";
@@ -13,6 +14,7 @@ export default async function BudgetVsActualPage() {
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "reports", session.user.role);
   if (!canView(__perm)) redirect("/");
+  const prefs = await getRequestPreferences();
 
   // كل المنح مع المانح والعملة
   const grantRows = await db.query.grants.findMany({
@@ -105,5 +107,5 @@ export default async function BudgetVsActualPage() {
 
   const donorVMs = Array.from(donorMap.values()).sort((a,b)=>b.totalPlanned-a.totalPlanned);
 
-  return <BudgetVsActualView donors={donorVMs} />;
+  return <BudgetVsActualView donors={donorVMs} locale={prefs.locale} />;
 }

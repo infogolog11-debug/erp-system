@@ -2,16 +2,23 @@
 "use client";
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import type { AppLocale } from "@/lib/preferences";
 
 type Props = {
   apiPath:   string;  // /api/export/payroll/[id] مثلاً
   filename:  string;  // اسم الملف بدون امتداد
   formats?:  ("pdf"|"excel")[];
+  locale?:   AppLocale;
 };
 
-export default function ExportButton({ apiPath, filename, formats = ["pdf","excel"] }: Props) {
+export default function ExportButton({ apiPath, filename, formats = ["pdf","excel"], locale = "ar" }: Props) {
   const [loading, setLoading] = useState<"pdf"|"excel"|null>(null);
   const [open,    setOpen]    = useState(false);
+
+  const isAr = locale === "ar";
+  const t = isAr
+    ? { export: "تصدير", exportPdf: "تصدير PDF", exportExcel: "تصدير Excel" }
+    : { export: "Export", exportPdf: "Export PDF", exportExcel: "Export Excel" };
 
   async function exportPDF() {
     setLoading("pdf"); setOpen(false);
@@ -52,7 +59,7 @@ export default function ExportButton({ apiPath, filename, formats = ["pdf","exce
           ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
           : <i className="ti ti-download text-[15px]" />
         }
-        تصدير
+        {t.export}
         <i className={`ti ti-chevron-${open?"up":"down"} text-[12px] text-[#4B5563]`} />
       </button>
 
@@ -64,14 +71,14 @@ export default function ExportButton({ apiPath, filename, formats = ["pdf","exce
               <button onClick={exportPDF}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#D1D5DB] hover:bg-[#161B26] transition-colors text-right">
                 <i className="ti ti-file-type-pdf text-[#E24B4A] text-[16px]" />
-                تصدير PDF
+                {t.exportPdf}
               </button>
             )}
             {formats.includes("excel") && (
               <button onClick={exportExcel}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#D1D5DB] hover:bg-[#161B26] transition-colors text-right border-t border-[#1F2937]">
                 <i className="ti ti-file-type-xls text-[#1D9E75] text-[16px]" />
-                تصدير Excel
+                {t.exportExcel}
               </button>
             )}
           </div>

@@ -4,10 +4,12 @@ import { db }       from "@/db";
 import { users }    from "@/db/schema";
 import { eq }       from "drizzle-orm";
 import UsersPanel   from "@/modules/settings/components/UsersPanel";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function UsersPage() {
   const session = await auth();
   if (!session?.user) redirect("/");
+  const prefs   = await getRequestPreferences();
   const role    = session.user.role;
   const orgId   = session.user.organizationId;
   if (role !== "admin" && role !== "super_admin") redirect("/");
@@ -33,6 +35,7 @@ export default async function UsersPage() {
         isActive: u.isActive ?? true,
         createdAt:u.createdAt.toISOString(),
       }))}
+      locale={prefs.locale}
     />
   );
 }

@@ -1,5 +1,6 @@
 // مكوّن مشترك: شريط حالة الموافقات — يُستخدم في PR وأوامر الشراء والفواتير
 "use client";
+import type { AppLocale } from "@/lib/preferences";
 
 type Level = {
   level:      number;
@@ -9,7 +10,8 @@ type Level = {
   comments?:  string;
 };
 
-export default function ApprovalBadge({ levels, compact = false }: { levels: Level[]; compact?: boolean }) {
+export default function ApprovalBadge({ levels, compact = false, locale = "ar" }: { levels: Level[]; compact?: boolean; locale?: AppLocale }) {
+  const isAr = locale === "ar";
   if (!levels.length) return null;
 
   const statusStyle: Record<string, { dot: string; label: string; ring: string }> = {
@@ -26,7 +28,7 @@ export default function ApprovalBadge({ levels, compact = false }: { levels: Lev
     const color = hasRejection ? "text-[#E24B4A]" : done === total ? "text-[#1D9E75]" : "text-[#EF9F27]";
     return (
       <span className={`text-[11px] font-medium ${color}`}>
-        {hasRejection ? "مرفوض" : `${done}/${total} موافقة`}
+        {hasRejection ? (isAr ? "مرفوض" : "Rejected") : (isAr ? `${done}/${total} موافقة` : `${done}/${total} approved`)}
       </span>
     );
   }
@@ -49,7 +51,7 @@ export default function ApprovalBadge({ levels, compact = false }: { levels: Lev
               <div className="absolute bottom-full mb-2 right-1/2 translate-x-1/2 hidden group-hover:block z-10 pointer-events-none">
                 <div className="bg-[#161B26] border border-[#2D3748] rounded-lg px-3 py-2 text-xs text-white whitespace-nowrap shadow-xl">
                   <p className="font-medium">{lvl.levelName}</p>
-                  {lvl.decidedAt && <p className="text-[#4B5563] mt-0.5">{new Date(lvl.decidedAt).toLocaleDateString("ar")}</p>}
+                  {lvl.decidedAt && <p className="text-[#4B5563] mt-0.5">{new Date(lvl.decidedAt).toLocaleDateString(isAr ? "ar" : "en-US")}</p>}
                   {lvl.comments && <p className="text-[#9CA3AF] mt-0.5 max-w-[180px] whitespace-normal">{lvl.comments}</p>}
                 </div>
               </div>

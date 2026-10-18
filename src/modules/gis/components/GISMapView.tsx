@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import type { AppLocale } from "@/lib/preferences";
 
 type Beneficiary = {
   id:string; code:string; firstName:string; lastName:string; fullNameAr:string|null;
@@ -14,7 +15,11 @@ const VULN_COLOR: Record<string,string> = {
   unaccompanied_minor:"#E24B4A", pregnant_lactating:"#EF9F27", other:"#9CA3AF",
 };
 
-export default function GISMapView({ beneficiaries, warehouses }: { beneficiaries: Beneficiary[]; warehouses: Warehouse[] }) {
+export default function GISMapView({ beneficiaries, warehouses, locale = "ar" }: { beneficiaries: Beneficiary[]; warehouses: Warehouse[]; locale?: AppLocale }) {
+  const isAr = locale === "ar";
+  const t = isAr
+    ? { all:"الكل", beneficiaries:"المستفيدون", warehouses:"المستودعات", empty:"لا توجد سجلات تحتوي على إحداثيات جغرافية بعد — يمكن إضافتها عند تسجيل مستفيد جديد أو من إعدادات المستودع" }
+    : { all:"All", beneficiaries:"Beneficiaries", warehouses:"Warehouses", empty:"No records with geographic coordinates yet — they can be added when registering a new beneficiary or from the warehouse settings" };
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const [layerFilter, setLayerFilter] = useState<"all"|"beneficiaries"|"warehouses">("all");
@@ -80,7 +85,7 @@ export default function GISMapView({ beneficiaries, warehouses }: { beneficiarie
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        {[["all","الكل"],["beneficiaries","المستفيدون"],["warehouses","المستودعات"]].map(([k,label]) => (
+        {[["all",t.all],["beneficiaries",t.beneficiaries],["warehouses",t.warehouses]].map(([k,label]) => (
           <button
             key={k} onClick={()=>setLayerFilter(k as any)}
             className={`text-[12px] font-medium px-3 py-1.5 rounded-lg transition-colors ${layerFilter===k?"bg-[#0F6E56] text-white":"bg-[#111827] text-[#9CA3AF] border border-[#1F2937]"}`}
@@ -90,7 +95,7 @@ export default function GISMapView({ beneficiaries, warehouses }: { beneficiarie
       <div ref={mapRef} className="w-full h-[560px] rounded-2xl border border-[#1F2937] overflow-hidden bg-[#111827]" />
       {beneficiaries.length === 0 && warehouses.length === 0 && (
         <p className="text-[12px] text-[#6B7280] text-center">
-          لا توجد سجلات تحتوي على إحداثيات جغرافية بعد — يمكن إضافتها عند تسجيل مستفيد جديد أو من إعدادات المستودع
+          {t.empty}
         </p>
       )}
     </div>
