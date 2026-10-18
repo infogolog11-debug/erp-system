@@ -16,9 +16,12 @@ echo ''
 # ─────────────────────────────────────────────
 if [ -f ./.env.production ]; then
   echo '🔧 تحميل متغيرات البيئة من .env.production ...'
+  ENV_TMP="$(mktemp)"
+  tr -d '\r' < ./.env.production > "$ENV_TMP"
   set -a
-  . ./.env.production
+  . "$ENV_TMP"
   set +a
+  rm -f "$ENV_TMP"
   echo '   ✅ تم تحميل المتغيرات'
 fi
 echo ''
