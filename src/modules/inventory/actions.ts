@@ -4,13 +4,14 @@ import { errMsg } from "@/types/db";
 import { db } from "@/db";
 import {
   assets, depreciationSchedules, journalEntries, journalLines, accounts,
-  fiscalPeriods, currencies,
+  fiscalPeriods, currencies, items, itemCategories, warehouses,
 } from "@/db/schema";
 import { createAuditLog } from "@/core/audit/audit-trail";
 import { revalidatePath } from "next/cache";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requirePermission, assertOrgMatches } from "@/lib/auth/guard";
+
 // ── حاسبة الاستهلاك (مدمجة من nexus-erp) ──
 import {
   calculateMonthlyDepreciation,
@@ -214,5 +215,50 @@ export async function runBatchDepreciation(
     return { success:true, data:{ processed, skipped, errors } };
   } catch (e) {
     return { success:false, error:errMsg(e, "خطأ في الاستهلاك الجماعي") };
+  }
+}
+
+// ─── Create Item ───────────────────────────────────────────────────────────
+export async function createItem(params: {
+  organizationId: string;
+  categoryId?:    string;
+  code:           string;
+  name:           string;
+  nameAr?:        string;
+  description?:   string;
+  unit:           string;
+  itemType:       string;
+  minStock:       number;
+  unitCost?:      number;
+  userId:         string;
+}): Promise<ActionResult<{id:string}>> {
+  try {
+    const session = await requirePermission("inventory", "create");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(params.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const [item] = await db.insert(items).values({
+      organizationId: params.organizationId,
+      categoryId:     params.categoryId,
+      code:           params.code,
+      name:           params.name,
+      nameAr:         params.nameAr,
+      description:    params.description,
+      unit:           params.unit,
+      itemType:       params.itemType,
+      minStock:       String(params.minStock),
+      unitCost:       params.unitCost ? String(params.unitCost) : null,
+      createdBy:      params.userId,
+    }).returning();
+
+    await createAuditLog({
+      organizationId: params.organizationId, userId: params.userId,
+      tableName:"items", recordId:item.id, action:"CREATE", newValues: params,
+    });
+
+    revalidatePath("/inventory");
+    return { success:true, data:{ id:item.id } };
+  } catch (e) {
+    return { success:false, error:errMsg(e, "حدث خطأ في إضافة الصنف") };
   }
 }

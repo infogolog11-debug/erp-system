@@ -9,11 +9,13 @@ import VendorList   from "@/modules/vendors/components/VendorList";
 import VendorHeader from "@/modules/vendors/components/VendorHeader";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function VendorsPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ status?:string; view?:string; page?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "vendors", session.user.role);
@@ -41,12 +43,13 @@ export default async function VendorsPage({ searchParams: searchParamsPromise }:
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <VendorHeader total={totalCount} role={session.user.role} />
-      <VendorList vendors={allVendors} />
+      <VendorHeader total={totalCount} role={session.user.role} locale={prefs.locale} />
+      <VendorList vendors={allVendors} locale={prefs.locale} />
       <PaginationBar
         basePath="/vendors" currentPage={page} hasNextPage={hasNextPage}
         totalCount={totalCount} pageSize={limit}
         extraParams={{ status: searchParams.status, view: searchParams.view }}
+        locale={prefs.locale}
       />
     </div>
   );
