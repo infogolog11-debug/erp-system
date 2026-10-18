@@ -7,6 +7,7 @@ import { getUserPermission, canView } from "@/lib/permissions/service";
 import BeneficiaryListView from "@/modules/beneficiaries/components/BeneficiaryListView";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function BeneficiariesPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?:string }> }) {
   const searchParams = await searchParamsPromise;
@@ -15,6 +16,7 @@ export default async function BeneficiariesPage({ searchParams: searchParamsProm
   const orgId  = session.user.organizationId;
   const userId = session.user.id;
   const role   = session.user.role;
+  const prefs = await getRequestPreferences();
   const perm   = await getUserPermission(userId, orgId, "beneficiaries", role);
   if (!canView(perm)) redirect("/");
 
@@ -58,24 +60,24 @@ export default async function BeneficiariesPage({ searchParams: searchParamsProm
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-            <i className="ti ti-users-group text-[#0F6E56]" />إدارة المستفيدين
+            <i className="ti ti-users-group text-[#0F6E56]" />{prefs.locale === "ar" ? "إدارة المستفيدين" : "Beneficiaries"}
           </h1>
-          <p className="text-[13px] text-[#6B7280] mt-1">Beneficiary Management — {stats.total} مسجّل</p>
+          <p className="text-[13px] text-[#6B7280] mt-1">{prefs.locale === "ar" ? `إدارة المستفيدين — ${stats.total} مسجّل` : `Beneficiary management - ${stats.total} registered`}</p>
         </div>
         <a
           href="/beneficiaries/new"
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white bg-[#0F6E56] hover:bg-[#0D5C48] rounded-lg px-4 py-2 transition-colors"
         >
-          <i className="ti ti-plus" />تسجيل مستفيد جديد
+          <i className="ti ti-plus" />{prefs.locale === "ar" ? "تسجيل مستفيد جديد" : "Register beneficiary"}
         </a>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label:"الإجمالي", value: stats.total, color:"#378ADD", icon:"users" },
-          { label:"قيد المراجعة", value: stats.pending, color:"#EF9F27", icon:"clock" },
-          { label:"موثّق", value: stats.verified, color:"#1D9E75", icon:"circle-check" },
-          { label:"ازدواجية محتملة", value: stats.flagged, color:"#E24B4A", icon:"alert-triangle" },
+          { label: prefs.locale === "ar" ? "الإجمالي" : "Total", value: stats.total, color:"#378ADD", icon:"users" },
+          { label: prefs.locale === "ar" ? "قيد المراجعة" : "Pending review", value: stats.pending, color:"#EF9F27", icon:"clock" },
+          { label: prefs.locale === "ar" ? "موثّق" : "Verified", value: stats.verified, color:"#1D9E75", icon:"circle-check" },
+          { label: prefs.locale === "ar" ? "ازدواجية محتملة" : "Possible duplicates", value: stats.flagged, color:"#E24B4A", icon:"alert-triangle" },
         ].map(s => (
           <div key={s.label} className="bg-[#111827] border border-[#1F2937] rounded-xl p-4">
             <div className="flex items-center gap-2 text-[#6B7280] text-[12px] mb-1">
@@ -86,10 +88,11 @@ export default async function BeneficiariesPage({ searchParams: searchParamsProm
         ))}
       </div>
 
-      <BeneficiaryListView beneficiaries={visible as any} />
+      <BeneficiaryListView beneficiaries={visible as any} locale={prefs.locale} />
       <PaginationBar
         basePath="/beneficiaries" currentPage={page} hasNextPage={hasNextPage}
         totalCount={totalCount} pageSize={limit}
+        locale={prefs.locale}
       />
     </div>
   );

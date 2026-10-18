@@ -7,12 +7,14 @@ import { getUserPermission, canView } from "@/lib/permissions/service";
 import PartnerListView from "@/modules/partners/components/PartnerListView";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function PartnersPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) redirect("/login");
   const orgId = session.user.organizationId;
+  const prefs = await getRequestPreferences();
   const perm = await getUserPermission(session.user.id, orgId, "partners", session.user.role);
   if (!canView(perm)) redirect("/");
 
@@ -40,18 +42,19 @@ export default async function PartnersPage({ searchParams: searchParamsPromise }
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-            <i className="ti ti-building-community text-[#0F6E56]" />الشركاء المنفّذون والمنح الفرعية
+            <i className="ti ti-building-community text-[#0F6E56]" />{prefs.locale === "ar" ? "الشركاء المنفّذون والمنح الفرعية" : "Partners and sub-grants"}
           </h1>
-          <p className="text-[13px] text-[#6B7280] mt-1">Partner / Sub-grant Management — {totalCount} شريك</p>
+          <p className="text-[13px] text-[#6B7280] mt-1">{prefs.locale === "ar" ? `إدارة الشركاء والمنح الفرعية — ${totalCount} شريك` : `Partner and sub-grant management - ${totalCount} partners`}</p>
         </div>
         <a href="/partners/new" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white bg-[#0F6E56] hover:bg-[#0D5C48] rounded-lg px-4 py-2">
-          <i className="ti ti-plus" />تسجيل شريك جديد
+          <i className="ti ti-plus" />{prefs.locale === "ar" ? "تسجيل شريك جديد" : "Register partner"}
         </a>
       </div>
-      <PartnerListView partners={allPartners as any} />
+      <PartnerListView partners={allPartners as any} locale={prefs.locale} />
       <PaginationBar
         basePath="/partners" currentPage={page} hasNextPage={hasNextPage}
         totalCount={totalCount} pageSize={limit}
+        locale={prefs.locale}
       />
     </div>
   );

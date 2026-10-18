@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { grants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import BeneficiaryForm from "@/modules/beneficiaries/components/BeneficiaryForm";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function NewBeneficiaryPage() {
   const session = await auth();
@@ -13,6 +14,7 @@ export default async function NewBeneficiaryPage() {
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "beneficiaries", session.user.role);
   if (!canView(__perm)) redirect("/");
+  const prefs = await getRequestPreferences();
 
   const allGrants = await db.query.grants.findMany({
     where: eq(grants.organizationId, orgId),
@@ -22,10 +24,10 @@ export default async function NewBeneficiaryPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-white">تسجيل مستفيد جديد</h1>
-        <p className="text-sm text-[#6B7280] mt-0.5">أدخل بيانات المستفيد — سيتم فحص الازدواجية تلقائياً</p>
+        <h1 className="text-lg font-semibold text-white">{prefs.locale === "ar" ? "تسجيل مستفيد جديد" : "New beneficiary"}</h1>
+        <p className="text-sm text-[#6B7280] mt-0.5">{prefs.locale === "ar" ? "أدخل بيانات المستفيد — سيتم فحص الازدواجية تلقائياً" : "Enter beneficiary details. Duplicate screening will run automatically."}</p>
       </div>
-      <BeneficiaryForm grants={allGrants} organizationId={orgId} userId={session.user.id} />
+      <BeneficiaryForm grants={allGrants} organizationId={orgId} userId={session.user.id} locale={prefs.locale} />
     </div>
   );
 }
