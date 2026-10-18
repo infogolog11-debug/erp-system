@@ -10,6 +10,7 @@ import GrantListView   from "@/modules/grants/components/GrantListView";
 import GrantPageHeader from "@/modules/grants/components/GrantPageHeader";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function GrantsPage({
   searchParams: searchParamsPromise,
@@ -17,6 +18,7 @@ export default async function GrantsPage({
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const userId  = session.user.id;
   const role    = session.user.role;
@@ -54,16 +56,18 @@ export default async function GrantsPage({
         total={totalCount}
         currentView={view}
         role={session.user.role}
+        locale={prefs.locale}
       />
       {view === "kanban"
-        ? <GrantKanban grants={allGrants} />
-        : <GrantListView grants={allGrants} />
+        ? <GrantKanban grants={allGrants} locale={prefs.locale} />
+        : <GrantListView grants={allGrants} locale={prefs.locale} />
       }
       {view !== "kanban" && (
         <PaginationBar
           basePath="/grants" currentPage={page} hasNextPage={hasNextPage}
           totalCount={totalCount} pageSize={limit}
           extraParams={{ view: searchParams.view, status: searchParams.status }}
+          locale={prefs.locale}
         />
       )}
     </div>

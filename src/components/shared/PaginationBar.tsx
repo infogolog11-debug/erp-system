@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { AppLocale } from "@/lib/preferences";
+import { commonCopy } from "@/lib/i18n";
 
 // شريط ترقيم صفحات بسيط (روابط ?page=N)، بدون حالة عميل — يعمل مع Server
 // Components مباشرة بدون أي JS إضافي على المتصفح.
@@ -9,6 +11,7 @@ export default function PaginationBar({
   totalCount,
   pageSize,
   extraParams = {},
+  locale = "ar",
 }: {
   basePath: string;
   currentPage: number;
@@ -16,7 +19,9 @@ export default function PaginationBar({
   totalCount?: number;
   pageSize: number;
   extraParams?: Record<string, string | undefined>;
+  locale?: AppLocale;
 }) {
+  const t = commonCopy[locale];
   const buildHref = (page: number) => {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(extraParams)) if (v) params.set(k, v);
@@ -30,15 +35,15 @@ export default function PaginationBar({
     <div className="flex items-center justify-between border-t pt-4 mt-4 text-sm text-gray-600">
       <div>
         {typeof totalCount === "number"
-          ? `عرض ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, totalCount)} من ${totalCount}`
-          : `صفحة ${currentPage}`}
+          ? `${t.showing} ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, totalCount)} ${t.of} ${totalCount}`
+          : `${t.page} ${currentPage}`}
       </div>
       <div className="flex gap-2">
         {currentPage > 1 && (
-          <Link href={buildHref(currentPage - 1)} className="px-3 py-1 rounded border hover:bg-gray-50">السابق</Link>
+          <Link href={buildHref(currentPage - 1)} className="px-3 py-1 rounded border hover:bg-gray-50">{t.previous}</Link>
         )}
         {hasNextPage && (
-          <Link href={buildHref(currentPage + 1)} className="px-3 py-1 rounded border hover:bg-gray-50">التالي</Link>
+          <Link href={buildHref(currentPage + 1)} className="px-3 py-1 rounded border hover:bg-gray-50">{t.next}</Link>
         )}
       </div>
     </div>

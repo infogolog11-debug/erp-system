@@ -1,5 +1,7 @@
 // شريط تحذير الميزانية — يُعرض في صفحة تفاصيل المنحة وفي نموذج طلب الشراء
 "use client";
+import type { AppLocale } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
 type WarningLevel = "ok" | "warning" | "critical" | "blocked";
 
@@ -12,12 +14,13 @@ type Props = {
   blockThreshold?:   number;  // % افتراضي 100
   currency?:         string;
   compact?:          boolean;
+  locale?:           AppLocale;
 };
 
 export default function BudgetWarningBar({
   lineName, plannedAmount, spentAmount, committedAmount,
   warningThreshold = 80, blockThreshold = 100,
-  currency = "USD", compact = false,
+  currency = "USD", compact = false, locale = "ar",
 }: Props) {
   const used     = spentAmount + committedAmount;
   const pct      = plannedAmount > 0 ? (used / plannedAmount) * 100 : 0;
@@ -38,7 +41,32 @@ export default function BudgetWarningBar({
   };
   const s = styles[level];
 
-  const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const fmt = (n: number) => n.toLocaleString(getLocaleTag(locale), { maximumFractionDigits: 0 });
+  const copy = locale === "ar"
+    ? {
+        blocked: "🔴 ميزانية مستنفدة",
+        critical: "🟠 تحذير حرج",
+        warning: "🟡 تنبيه ميزانية",
+        ok: "✅ ضمن الحد",
+        used: "مُستخدم",
+        planned: "المخطط",
+        spent: "منفق",
+        committed: "ملتزم",
+        remaining: "متبقي",
+        blockedHint: "الطلبات الجديدة على هذا البند محجوبة تلقائياً",
+      }
+    : {
+        blocked: "🔴 Budget exhausted",
+        critical: "🟠 Critical warning",
+        warning: "🟡 Budget alert",
+        ok: "✅ Within limit",
+        used: "used",
+        planned: "planned",
+        spent: "Spent",
+        committed: "Committed",
+        remaining: "Remaining",
+        blockedHint: "New requests on this line are automatically blocked",
+      };
 
   if (compact) {
     return (
@@ -60,9 +88,9 @@ export default function BudgetWarningBar({
           <span className="text-sm font-medium text-[#D1D5DB]">{lineName}</span>
         </div>
         <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${s.badge}`}>
-          {level === "blocked"  ? "🔴 ميزانية مستنفدة" :
-           level === "critical" ? "🟠 تحذير حرج"       :
-           level === "warning"  ? "🟡 تنبيه ميزانية"   : "✅ ضمن الحد"}
+          {level === "blocked"  ? copy.blocked :
+           level === "critical" ? copy.critical :
+           level === "warning"  ? copy.warning : copy.ok}
         </span>
       </div>
 
@@ -75,18 +103,18 @@ export default function BudgetWarningBar({
           <div className="bg-[#EF9F27]/60 h-full" style={{ width: `${Math.min(committedAmount/plannedAmount*100, 100 - spentAmount/plannedAmount*100)}%` }} />
         </div>
         <div className="flex justify-between text-[10px] text-[#4B5563]">
-          <span>{fmt(used)} {currency} مُستخدم</span>
+          <span>{fmt(used)} {currency} {copy.used}</span>
           <span className={`font-semibold ${s.text} tabular-nums`}>{pct.toFixed(1)}%</span>
-          <span>{fmt(plannedAmount)} {currency} المخطط</span>
+          <span>{fmt(plannedAmount)} {currency} {copy.planned}</span>
         </div>
       </div>
 
       {/* تفاصيل */}
       <div className="grid grid-cols-3 gap-2 pt-1">
         {[
-          { label:"منفق", value: fmt(spentAmount),     color:"text-[#1D9E75]" },
-          { label:"ملتزم", value: fmt(committedAmount), color:"text-[#EF9F27]" },
-          { label:"متبقي", value: fmt(remaining),       color: level === "blocked" ? "text-[#E24B4A]" : "text-[#D1D5DB]" },
+          { label:copy.spent, value: fmt(spentAmount),     color:"text-[#1D9E75]" },
+          { label:copy.committed, value: fmt(committedAmount), color:"text-[#EF9F27]" },
+          { label:copy.remaining, value: fmt(remaining),       color: level === "blocked" ? "text-[#E24B4A]" : "text-[#D1D5DB]" },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[#0F1117] rounded-lg p-2 text-center">
             <p className="text-[10px] text-[#4B5563] mb-0.5">{label}</p>
@@ -98,7 +126,7 @@ export default function BudgetWarningBar({
       {level === "blocked" && (
         <p className="text-xs text-[#E24B4A] flex items-center gap-1 pt-1">
           <i className="ti ti-ban" />
-          الطلبات الجديدة على هذا البند محجوبة تلقائياً
+          {copy.blockedHint}
         </p>
       )}
     </div>

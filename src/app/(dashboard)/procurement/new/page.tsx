@@ -5,10 +5,12 @@ import { db }      from "@/db";
 import { grants, grantBudgetLines, currencies } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import PRForm      from "@/modules/procurement/components/PRForm";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function NewPRPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "procurement", session.user.role);
@@ -31,10 +33,10 @@ export default async function NewPRPage() {
     <div className="max-w-4xl mx-auto space-y-5">
       <div>
         <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-          <i className="ti ti-plus text-[#0F6E56]" />طلب شراء جديد
+          <i className="ti ti-plus text-[#0F6E56]" />{prefs.locale === "ar" ? "طلب شراء جديد" : "New purchase request"}
         </h1>
         <p className="text-sm text-[#6B7280] mt-1">
-          يتم التحقق من الميزانية ومستويات الموافقة تلقائياً
+          {prefs.locale === "ar" ? "يتم التحقق من الميزانية ومستويات الموافقة تلقائياً" : "Budget checks and approval levels are calculated automatically"}
         </p>
       </div>
       <PRForm
@@ -42,6 +44,7 @@ export default async function NewPRPage() {
         currencies={currenciesList}
         organizationId={orgId}
         userId={userId}
+        locale={prefs.locale}
       />
     </div>
   );

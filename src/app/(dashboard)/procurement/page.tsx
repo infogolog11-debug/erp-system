@@ -9,11 +9,13 @@ import PRKanban    from "@/modules/procurement/components/PRKanban";
 import PRPageHeader from "@/modules/procurement/components/PRPageHeader";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function ProcurementPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ view?:string; grantId?:string; page?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "procurement", session.user.role);
@@ -44,13 +46,14 @@ export default async function ProcurementPage({ searchParams: searchParamsPromis
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <PRPageHeader total={totalCount} currentView={view} role={session.user.role}/>
-      <PRKanban prs={allPRs} currentView={view}/>
+      <PRPageHeader total={totalCount} currentView={view} role={session.user.role} locale={prefs.locale}/>
+      <PRKanban prs={allPRs} currentView={view} locale={prefs.locale}/>
       {!isKanban && (
         <PaginationBar
           basePath="/procurement" currentPage={page} hasNextPage={hasNextPage}
           totalCount={totalCount} pageSize={limit}
           extraParams={{ view: searchParams.view, grantId: searchParams.grantId }}
+          locale={prefs.locale}
         />
       )}
     </div>

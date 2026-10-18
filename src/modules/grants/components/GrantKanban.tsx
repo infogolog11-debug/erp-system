@@ -2,17 +2,12 @@
 "use client";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
-
-const COLUMNS = [
-  { status:"draft",     label:"مسودة",    color:"#4B5563", bg:"#161B26",     border:"#2D3748" },
-  { status:"submitted", label:"قيد المراجعة", color:"#EF9F27", bg:"#1A1400",  border:"#3D2E00" },
-  { status:"approved",  label:"معتمدة",   color:"#1D9E75", bg:"#001A12",     border:"#0F3D28" },
-  { status:"done",      label:"مكتملة",   color:"#6B7280", bg:"#111318",     border:"#1F2937" },
-];
+import type { AppLocale } from "@/lib/preferences";
+import { getLocaleTag, grantStatusLabels } from "@/lib/i18n";
 
 import type { GrantDisplay, BudgetLineDisplay } from "@/types/db";
 
-function BudgetBar({ lines }: { lines: BudgetLineDisplay[] }) {
+function BudgetBar({ lines, locale }: { lines: BudgetLineDisplay[]; locale: AppLocale }) {
   const total     = lines.reduce((s, l) => s + Number(l.plannedAmount), 0);
   const spent     = lines.reduce((s, l) => s + Number(l.spentAmount), 0);
   const committed = lines.reduce((s, l) => s + Number(l.committedAmount), 0);
@@ -24,7 +19,7 @@ function BudgetBar({ lines }: { lines: BudgetLineDisplay[] }) {
   return (
     <div className="mt-3">
       <div className="flex justify-between text-[10px] text-[#4B5563] mb-1">
-        <span>الميزانية</span>
+        <span>{locale === "ar" ? "الميزانية" : "Budget"}</span>
         <span className={isWarn ? "text-[#EF9F27]" : ""}>{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 bg-[#1F2937] rounded-full overflow-hidden">
@@ -37,12 +32,13 @@ function BudgetBar({ lines }: { lines: BudgetLineDisplay[] }) {
   );
 }
 
-function GrantCard({ grant }: { grant: GrantDisplay }) {
+function GrantCard({ grant, locale }: { grant: GrantDisplay; locale: AppLocale }) {
   const daysLeft = Math.ceil(
     (new Date(grant.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
   const isExpiring = daysLeft <= 30 && daysLeft > 0;
   const isExpired  = daysLeft <= 0;
+  const localeTag = getLocaleTag(locale);
 
   return (
     <Link href={`/grants/${grant.id}`}>
@@ -57,7 +53,7 @@ function GrantCard({ grant }: { grant: GrantDisplay }) {
             <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
               isExpired ? "bg-[#2A1215] text-[#E24B4A]" : "bg-[#271E0A] text-[#EF9F27]"
             }`}>
-              {isExpired ? "منتهية" : `${daysLeft} يوم`}
+              {isExpired ? (locale === "ar" ? "منتهية" : "Expired") : `${daysLeft} ${locale === "ar" ? "يوم" : "days"}`}
             </span>
           )}
         </div>
@@ -73,22 +69,30 @@ function GrantCard({ grant }: { grant: GrantDisplay }) {
         {/* المبلغ */}
         <div className="mt-3 pt-3 border-t border-[#1F2937]">
           <p className="text-sm font-semibold text-[#1D9E75] tabular-nums">
-            {formatCurrency(grant.totalAmount)}
+            {formatCurrency(grant.totalAmount, "USD", localeTag)}
           </p>
         </div>
 
         {/* شريط الميزانية */}
-        <BudgetBar lines={grant.budgetLines ?? []} />
+        <BudgetBar lines={grant.budgetLines ?? []} locale={locale} />
 
       </div>
     </Link>
   );
 }
 
-export default function GrantKanban({ grants }: { grants: GrantDisplay[] }) {
+export default function GrantKanban({ grants, locale }: { grants: GrantDisplay[]; locale: AppLocale }) {
+  const labels = grantStatusLabels[locale];
+  const columns = [
+    { status:"draft",     label:labels.draft,     color:"#4B5563", bg:"#161B26",     border:"#2D3748" },
+    { status:"submitted", label:labels.submitted, color:"#EF9F27", bg:"#1A1400",     border:"#3D2E00" },
+    { status:"approved",  label:labels.approved,  color:"#1D9E75", bg:"#001A12",     border:"#0F3D28" },
+    { status:"done",      label:labels.done,      color:"#6B7280", bg:"#111318",     border:"#1F2937" },
+  ] as const;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      {COLUMNS.map((col) => {
+      {columns.map((col) => {
         const colGrants = grants.filter((g) => g.status === col.status);
         return (
           <div key={col.status} className="flex flex-col min-h-[400px]">
@@ -115,10 +119,10 @@ export default function GrantKanban({ grants }: { grants: GrantDisplay[] }) {
             <div className="flex flex-col gap-2 flex-1">
               {colGrants.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center border border-dashed border-[#1F2937] rounded-xl">
-                  <p className="text-xs text-[#374151]">لا توجد منح</p>
+                  <p className="text-xs text-[#374151]">{locale === "ar" ? "لا توجد منح" : "No grants"}</p>
                 </div>
               ) : (
-                colGrants.map((g) => <GrantCard key={g.id} grant={g} />)
+                colGrants.map((g) => <GrantCard key={g.id} grant={g} locale={locale} />)
               )}
             </div>
           </div>

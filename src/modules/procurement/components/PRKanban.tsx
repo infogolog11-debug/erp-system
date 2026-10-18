@@ -1,13 +1,8 @@
 // src/modules/procurement/components/PRKanban.tsx
 "use client";
 import Link from "next/link";
-
-const COLUMNS = [
-  { status:"draft",     label:"مسودة",         color:"#4B5563", bg:"#161B26",  border:"#2D3748" },
-  { status:"submitted", label:"بانتظار الموافقة", color:"#EF9F27", bg:"#1A1400", border:"#3D2E00" },
-  { status:"approved",  label:"معتمدة",         color:"#1D9E75", bg:"#001A12",  border:"#0F3D28" },
-  { status:"done",      label:"منجزة",          color:"#6B7280", bg:"#111318",  border:"#1F2937" },
-];
+import type { AppLocale } from "@/lib/preferences";
+import { getLocaleTag, procurementPriorityLabels, procurementStatusLabels } from "@/lib/i18n";
 
 const PRIORITY_STYLE: Record<string,string> = {
   urgent:"bg-[#2A1215] text-[#E24B4A]",
@@ -15,18 +10,19 @@ const PRIORITY_STYLE: Record<string,string> = {
   medium:"bg-[#0A1628] text-[#378ADD]",
   low:"bg-[#161B26] text-[#6B7280]",
 };
-const PRIORITY_LABEL: Record<string,string> = {urgent:"عاجل",high:"عالية",medium:"متوسطة",low:"منخفضة"};
 
 import type { PRDisplay } from "@/types/db";
 
-function PRCard({ pr }: { pr: PRDisplay }) {
+function PRCard({ pr, locale }: { pr: PRDisplay; locale: AppLocale }) {
+  const priorityLabels = procurementPriorityLabels[locale];
+  const localeTag = getLocaleTag(locale);
   return (
     <Link href={`/procurement/requests/${pr.id}`}>
       <div className="bg-[#0F1117] border border-[#1F2937] rounded-xl p-4 hover:border-[#2D3748] hover:bg-[#141920] transition-all group">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-mono text-[#4B5563]">{pr.code}</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${PRIORITY_STYLE[pr.priority ?? "medium"]}`}>
-            {PRIORITY_LABEL[pr.priority ?? "medium"]}
+            {priorityLabels[pr.priority as keyof typeof priorityLabels] ?? pr.priority}
           </span>
         </div>
         <h3 className="text-sm font-medium text-[#D1D5DB] group-hover:text-white line-clamp-2 mb-2">{pr.title}</h3>
@@ -39,7 +35,7 @@ function PRCard({ pr }: { pr: PRDisplay }) {
         {pr.estimatedTotal && (
           <div className="mt-3 pt-3 border-t border-[#1F2937]">
             <p className="text-xs font-semibold text-[#EF9F27] tabular-nums">
-              {Number(pr.estimatedTotal).toLocaleString("ar-SA")}
+              {Number(pr.estimatedTotal).toLocaleString(localeTag)}
             </p>
           </div>
         )}
@@ -48,13 +44,20 @@ function PRCard({ pr }: { pr: PRDisplay }) {
   );
 }
 
-function PRTable({ prs }: { prs: PRDisplay[] }) {
+function PRTable({ prs, locale }: { prs: PRDisplay[]; locale: AppLocale }) {
+  const headers = locale === "ar"
+    ? ["الكود","العنوان","المنحة","المبلغ التقديري","الأولوية","الحالة"]
+    : ["Code","Title","Grant","Estimated amount","Priority","Status"];
+  const priorityLabels = procurementPriorityLabels[locale];
+  const statusLabels = procurementStatusLabels[locale];
+  const localeTag = getLocaleTag(locale);
+
   return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
-            {["الكود","العنوان","المنحة","المبلغ التقديري","الأولوية","الحالة"].map(h=>(
+            {headers.map(h=>(
               <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
@@ -65,9 +68,9 @@ function PRTable({ prs }: { prs: PRDisplay[] }) {
               <td className="px-4 py-3 font-mono text-xs text-[#4B5563]">{pr.code}</td>
               <td className="px-4 py-3"><Link href={`/procurement/requests/${pr.id}`} className="text-[#D1D5DB] hover:text-white">{pr.title}</Link></td>
               <td className="px-4 py-3 text-xs text-[#6B7280]">{pr.grant?.name ?? "—"}</td>
-              <td className="px-4 py-3 text-xs text-[#EF9F27] tabular-nums">{pr.estimatedTotal ? Number(pr.estimatedTotal).toLocaleString("ar-SA") : "—"}</td>
-              <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-md ${PRIORITY_STYLE[pr.priority??"medium"]}`}>{PRIORITY_LABEL[pr.priority??"medium"]}</span></td>
-              <td className="px-4 py-3 text-xs text-[#6B7280]">{pr.status}</td>
+              <td className="px-4 py-3 text-xs text-[#EF9F27] tabular-nums">{pr.estimatedTotal ? Number(pr.estimatedTotal).toLocaleString(localeTag) : "—"}</td>
+              <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-md ${PRIORITY_STYLE[pr.priority??"medium"]}`}>{priorityLabels[pr.priority as keyof typeof priorityLabels] ?? pr.priority}</span></td>
+              <td className="px-4 py-3 text-xs text-[#6B7280]">{statusLabels[pr.status as keyof typeof statusLabels] ?? pr.status}</td>
             </tr>
           ))}
         </tbody>
@@ -76,11 +79,19 @@ function PRTable({ prs }: { prs: PRDisplay[] }) {
   );
 }
 
-export default function PRKanban({ prs, currentView }: { prs: PRDisplay[]; currentView: string }) {
-  if (currentView === "list") return <PRTable prs={prs} />;
+export default function PRKanban({ prs, currentView, locale }: { prs: PRDisplay[]; currentView: string; locale: AppLocale }) {
+  const statusLabels = procurementStatusLabels[locale];
+  const columns = [
+    { status:"draft", label:statusLabels.draft, color:"#4B5563", bg:"#161B26", border:"#2D3748" },
+    { status:"submitted", label:statusLabels.submitted, color:"#EF9F27", bg:"#1A1400", border:"#3D2E00" },
+    { status:"approved", label:statusLabels.approved, color:"#1D9E75", bg:"#001A12", border:"#0F3D28" },
+    { status:"done", label:statusLabels.done, color:"#6B7280", bg:"#111318", border:"#1F2937" },
+  ] as const;
+
+  if (currentView === "list") return <PRTable prs={prs} locale={locale} />;
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      {COLUMNS.map((col) => {
+      {columns.map((col) => {
         const items = prs.filter(p => p.status === col.status);
         return (
           <div key={col.status} className="flex flex-col">
@@ -93,8 +104,8 @@ export default function PRKanban({ prs, currentView }: { prs: PRDisplay[]; curre
             </div>
             <div className="flex flex-col gap-2 min-h-[200px]">
               {items.length===0
-                ? <div className="flex-1 flex items-center justify-center border border-dashed border-[#1F2937] rounded-xl"><p className="text-xs text-[#374151]">لا توجد طلبات</p></div>
-                : items.map(pr=><PRCard key={pr.id} pr={pr}/>)
+                ? <div className="flex-1 flex items-center justify-center border border-dashed border-[#1F2937] rounded-xl"><p className="text-xs text-[#374151]">{locale === "ar" ? "لا توجد طلبات" : "No requests"}</p></div>
+                : items.map(pr=><PRCard key={pr.id} pr={pr} locale={locale}/>)
               }
             </div>
           </div>

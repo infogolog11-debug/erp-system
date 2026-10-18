@@ -5,10 +5,12 @@ import { db } from "@/db";
 import { donors, currencies, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import GrantForm from "@/modules/grants/components/GrantForm";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function NewGrantPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "grants", session.user.role);
@@ -20,8 +22,13 @@ export default async function NewGrantPage() {
   ]);
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-6"><h1 className="text-lg font-semibold text-white">منحة جديدة</h1><p className="text-sm text-[#6B7280] mt-0.5">أدخل تفاصيل المنحة وبنود الميزانية</p></div>
-      <GrantForm donors={allDonors} currencies={allCurrencies} managers={allManagers} organizationId={orgId} userId={session.user.id}/>
+      <div className="mb-6">
+        <h1 className="text-lg font-semibold text-white">{prefs.locale === "ar" ? "منحة جديدة" : "New grant"}</h1>
+        <p className="text-sm text-[#6B7280] mt-0.5">
+          {prefs.locale === "ar" ? "أدخل تفاصيل المنحة وبنود الميزانية" : "Enter the grant details and budget lines"}
+        </p>
+      </div>
+      <GrantForm donors={allDonors} currencies={allCurrencies} managers={allManagers} organizationId={orgId} userId={session.user.id} locale={prefs.locale}/>
     </div>
   );
 }
