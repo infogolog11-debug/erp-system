@@ -11,6 +11,19 @@ echo '════════════════════════�
 echo ''
 
 # ─────────────────────────────────────────────
+# [0/3] تحميل متغيرات البيئة من .env.production
+#       (يضمن توفر DATABASE_URL/AUTH_* حتى لو لم تُضبط في لوحة Render)
+# ─────────────────────────────────────────────
+if [ -f ./.env.production ]; then
+  echo '🔧 تحميل متغيرات البيئة من .env.production ...'
+  set -a
+  . ./.env.production
+  set +a
+  echo '   ✅ تم تحميل المتغيرات'
+fi
+echo ''
+
+# ─────────────────────────────────────────────
 # [1/3] Migrations (الإصدار الأكثر استقراراً CJS أولاً)
 # ─────────────────────────────────────────────
 echo '⚙️  [1/3] تشغيل قاعدة البيانات Migrations (001→016)...'
@@ -18,7 +31,7 @@ if node src/db/migrations/run-migrations.cjs; then
   echo '   ✅ Migrations via CJS — نجح'
 else
   echo '   ⚠️  CJS فشل، محاولة النسخة TS كنسخة احتياطية...'
-  npx --yes tsx src/db/migrations/run-migrations.ts
+  npx --yes tsx src/db/migrations/run-migrations.ts || echo '   ⚠️  تعذّر إكمال بعض الـ Migrations — سيتم المتابعة'
 fi
 echo ''
 

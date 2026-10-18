@@ -38,13 +38,13 @@ services:
       - key: AUTH_SECRET
         value: GIbjpeeN7i0iEBInnBXbarsPgxvVXjL4aLcnwrugnYU=
       - key: AUTH_URL
-        sync: false
+        value: "https://erp-system-eywi.onrender.com"
       - key: AUTH_TRUST_HOST
         value: "true"
 
       # ── 4. إعدادات التطبيق العامة ──
       - key: NEXT_PUBLIC_APP_URL
-        sync: false
+        value: "https://erp-system-eywi.onrender.com"
       - key: NEXT_PUBLIC_APP_NAME
         value: "نظام إدارة الموارد"
 
@@ -52,7 +52,7 @@ services:
       - key: SEED_ADMIN_EMAIL
         value: admin@yourorg.com
       - key: SEED_ADMIN_PASSWORD
-        value: "2ANRMNTWNPeyXr8w39iZW3EU!1A."
+        value: "2ANRMNTWNPeyXr8w39iZW3EU!1A"
 
       # ── 6. البريد الإلكتروني / التنبيهات (اختياري — اتركها فارغة حالياً) ──
       - key: RESEND_API_KEY
