@@ -7,11 +7,20 @@ import type { AppLocale } from "@/lib/preferences";
 import { commonCopy, getLocaleTag } from "@/lib/i18n";
 
 interface BudgetLine { code:string; name:string; budgetCategory:string; plannedAmount:string; }
+type GrantFormProps = {
+  donors: Array<{ id: string; name: string }>;
+  currencies: Array<{ id: string; code: string }>;
+  managers: Array<{ id: string; firstName: string | null; lastName: string | null }>;
+  organizationId: string;
+  userId: string;
+  locale: AppLocale;
+};
+
 const inputCls = "w-full bg-[#0F1117] border border-[#2D3748] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#4B5563] focus:outline-none focus:border-[#0F6E56] focus:ring-1 focus:ring-[#0F6E56] transition-all";
 function Field({label,required,children}:{label:string;required?:boolean;children:React.ReactNode}){
   return(<div><label className="block text-xs font-medium text-[#9CA3AF] mb-1.5">{label}{required&&<span className="text-[#E24B4A] mr-1">*</span>}</label>{children}</div>);
 }
-export default function GrantForm({donors,currencies,managers,organizationId,userId,locale}:any & { locale: AppLocale }){
+export default function GrantForm({donors,currencies,managers,organizationId,userId,locale}: GrantFormProps){
   const router=useRouter();
   const [isPending,startTransition]=useTransition();
   const [error,setError]=useState("");
