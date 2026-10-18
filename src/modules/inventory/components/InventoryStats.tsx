@@ -1,10 +1,12 @@
 // src/modules/inventory/components/InventoryStats.tsx
-export default function InventoryStats({ totalItems, totalAssets, lowStock, warehouses }: { totalItems:number; totalAssets:number; lowStock:number; warehouses:number }) {
+import type { AppLocale } from "@/lib/preferences";
+
+export default function InventoryStats({ totalItems, totalAssets, lowStock, warehouses, locale = "ar" }: { totalItems:number; totalAssets:number; lowStock:number; warehouses:number; locale?: AppLocale }) {
   const stats = [
-    { label:"إجمالي الأصناف", value:totalItems,  icon:"package",   color:"#378ADD" },
-    { label:"الأصول الثابتة", value:totalAssets, icon:"box",        color:"#7F77DD" },
-    { label:"مخزون منخفض",    value:lowStock,    icon:"alert-triangle", color: lowStock > 0 ? "#E24B4A" : "#1D9E75" },
-    { label:"المستودعات",     value:warehouses,  icon:"building",   color:"#1D9E75" },
+    { label:locale === "ar" ? "إجمالي الأصناف" : "Total items", value:totalItems,  icon:"package",   color:"#378ADD" },
+    { label:locale === "ar" ? "الأصول الثابتة" : "Fixed assets", value:totalAssets, icon:"box",        color:"#7F77DD" },
+    { label:locale === "ar" ? "مخزون منخفض" : "Low stock",    value:lowStock,    icon:"alert-triangle", color: lowStock > 0 ? "#E24B4A" : "#1D9E75" },
+    { label:locale === "ar" ? "المستودعات" : "Warehouses",     value:warehouses,  icon:"building",   color:"#1D9E75" },
   ];
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

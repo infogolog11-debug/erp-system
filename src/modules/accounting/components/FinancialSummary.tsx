@@ -1,10 +1,13 @@
 // src/modules/accounting/components/FinancialSummary.tsx
 import type { AccountDisplay } from "@/types/db";
+import type { AppLocale } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
-export default function FinancialSummary({ accounts }: { accounts: AccountDisplay[] }) {
+export default function FinancialSummary({ accounts, locale = "ar" }: { accounts: AccountDisplay[]; locale?: AppLocale }) {
   const byType = (type: string) =>
     accounts.filter(a => a.accountType === type)
       .reduce((s, a) => s + Number(a.currentBalance), 0);
+  const localeTag = getLocaleTag(locale);
 
   const totalAssets    = byType("asset");
   const totalLiab      = byType("liability");
@@ -13,10 +16,10 @@ export default function FinancialSummary({ accounts }: { accounts: AccountDispla
   const netIncome      = totalRevenue - totalExpense;
 
   const cards = [
-    { label:"إجمالي الأصول",   value:totalAssets,  color:"#378ADD", icon:"trending-up"  },
-    { label:"إجمالي الخصوم",   value:totalLiab,    color:"#E24B4A", icon:"trending-down" },
-    { label:"الإيرادات",        value:totalRevenue, color:"#1D9E75", icon:"coins"         },
-    { label:"صافي الدخل",       value:netIncome,    color: netIncome >= 0 ? "#1D9E75" : "#E24B4A", icon:"calculator" },
+    { label:locale === "ar" ? "إجمالي الأصول" : "Total assets",   value:totalAssets,  color:"#378ADD", icon:"trending-up"  },
+    { label:locale === "ar" ? "إجمالي الخصوم" : "Total liabilities",   value:totalLiab,    color:"#E24B4A", icon:"trending-down" },
+    { label:locale === "ar" ? "الإيرادات" : "Revenue",        value:totalRevenue, color:"#1D9E75", icon:"coins"         },
+    { label:locale === "ar" ? "صافي الدخل" : "Net income",       value:netIncome,    color: netIncome >= 0 ? "#1D9E75" : "#E24B4A", icon:"calculator" },
   ];
 
   return (
@@ -29,7 +32,7 @@ export default function FinancialSummary({ accounts }: { accounts: AccountDispla
             </div>
             <div>
               <p className="text-lg font-semibold tabular-nums" style={{ color:c.color }}>
-                {c.value.toLocaleString("ar-SA")}
+                {c.value.toLocaleString(localeTag)}
               </p>
               <p className="text-xs text-[#4B5563] mt-0.5">{c.label}</p>
             </div>

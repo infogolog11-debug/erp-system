@@ -10,11 +10,15 @@ import AccountingHeader from "@/modules/accounting/components/AccountingHeader";
 import FinancialSummary from "@/modules/accounting/components/FinancialSummary";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
 export default async function AccountingPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ tab?:string; page?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
+  const localeTag = getLocaleTag(prefs.locale);
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "accounting", session.user.role);
@@ -48,13 +52,13 @@ export default async function AccountingPage({ searchParams: searchParamsPromise
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <AccountingHeader role={session.user.role} tab={tab} />
-      <FinancialSummary accounts={allAccounts} />
+      <AccountingHeader role={session.user.role} tab={tab} locale={prefs.locale} />
+      <FinancialSummary accounts={allAccounts} locale={prefs.locale} />
       {tab === "accounts"
-        ? <AccountsList accounts={allAccounts} />
+        ? <AccountsList accounts={allAccounts} locale={prefs.locale} localeTag={localeTag} />
         : <>
-            <JournalList entries={visibleEntries} role={session.user.role} userId={session.user.id} organizationId={orgId} />
-            <PaginationBar basePath="/accounting" currentPage={page} hasNextPage={hasNextPage} totalCount={totalCount} pageSize={limit} />
+            <JournalList entries={visibleEntries} role={session.user.role} userId={session.user.id} organizationId={orgId} locale={prefs.locale} />
+            <PaginationBar basePath="/accounting" currentPage={page} hasNextPage={hasNextPage} totalCount={totalCount} pageSize={limit} locale={prefs.locale} />
           </>
       }
     </div>
@@ -63,15 +67,17 @@ export default async function AccountingPage({ searchParams: searchParamsPromise
 
 import type { AccountDisplay } from "@/types/db";
 
-function AccountsList({ accounts }: { accounts: AccountDisplay[] }) {
-  const TYPE_LABEL: Record<string,string> = { asset:"أصول", liability:"خصوم", equity:"حقوق الملكية", revenue:"إيرادات", expense:"مصروفات" };
+function AccountsList({ accounts, locale, localeTag }: { accounts: AccountDisplay[]; locale: "ar" | "en"; localeTag: string }) {
+  const TYPE_LABEL: Record<string,string> = locale === "ar"
+    ? { asset:"أصول", liability:"خصوم", equity:"حقوق الملكية", revenue:"إيرادات", expense:"مصروفات" }
+    : { asset:"Assets", liability:"Liabilities", equity:"Equity", revenue:"Revenue", expense:"Expenses" };
   const TYPE_COLOR: Record<string,string> = { asset:"#378ADD", liability:"#E24B4A", equity:"#7F77DD", revenue:"#1D9E75", expense:"#EF9F27" };
   return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
-            {["الكود","اسم الحساب","النوع","الرصيد الحالي"].map(h=>(
+            {(locale === "ar" ? ["الكود","اسم الحساب","النوع","الرصيد الحالي"] : ["Code","Account name","Type","Current balance"]).map(h=>(
               <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
@@ -89,7 +95,7 @@ function AccountsList({ accounts }: { accounts: AccountDisplay[] }) {
                   </span>
                 </td>
                 <td className={`px-4 py-3 font-semibold tabular-nums ${bal >= 0 ? "text-[#1D9E75]" : "text-[#E24B4A]"}`}>
-                  {bal.toLocaleString("ar-SA")}
+                  {bal.toLocaleString(localeTag)}
                 </td>
               </tr>
             );

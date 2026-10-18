@@ -1,11 +1,14 @@
 // src/modules/inventory/components/ItemList.tsx
 type ItemDisplay = { id:string; code:string; name:string; nameAr?:string|null; currentStock?:string|number|null; minStock?:string|number|null; unit?:string|null; category?:{ name:string; nameAr?:string|null }|null };
+import type { AppLocale } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
-export default function ItemList({ items }: { items: ItemDisplay[] }) {
+export default function ItemList({ items, locale = "ar" }: { items: ItemDisplay[]; locale?: AppLocale }) {
+  const localeTag = getLocaleTag(locale);
   if (items.length === 0) return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-12 text-center">
       <i className="ti ti-package text-[40px] text-[#1F2937]" aria-hidden="true" />
-      <p className="text-sm text-[#4B5563] mt-3">لا توجد أصناف في المخزون</p>
+      <p className="text-sm text-[#4B5563] mt-3">{locale === "ar" ? "لا توجد أصناف في المخزون" : "No inventory items"}</p>
     </div>
   );
   return (
@@ -13,7 +16,7 @@ export default function ItemList({ items }: { items: ItemDisplay[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
-            {["الكود","الصنف","الفئة","الوحدة","الرصيد الحالي","الحد الأدنى","الحالة"].map(h=>(
+            {(locale === "ar" ? ["الكود","الصنف","الفئة","الوحدة","الرصيد الحالي","الحد الأدنى","الحالة"] : ["Code","Item","Category","Unit","Current stock","Min stock","Status"]).map(h=>(
               <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
@@ -26,17 +29,17 @@ export default function ItemList({ items }: { items: ItemDisplay[] }) {
             return (
               <tr key={item.id} className={`hover:bg-[#161B26] ${i < items.length-1 ? "border-b border-[#1F2937]" : ""}`}>
                 <td className="px-4 py-3 font-mono text-xs text-[#4B5563]">{item.code}</td>
-                <td className="px-4 py-3 font-medium text-[#D1D5DB]">{item.name}</td>
-                <td className="px-4 py-3 text-xs text-[#6B7280]">{item.category?.name ?? "—"}</td>
+                <td className="px-4 py-3 font-medium text-[#D1D5DB]">{locale === "ar" ? (item.nameAr ?? item.name) : item.name}</td>
+                <td className="px-4 py-3 text-xs text-[#6B7280]">{locale === "ar" ? (item.category?.nameAr ?? item.category?.name ?? "—") : (item.category?.name ?? "—")}</td>
                 <td className="px-4 py-3 text-xs text-[#6B7280]">{item.unit}</td>
                 <td className={`px-4 py-3 font-semibold tabular-nums text-sm ${isLow ? "text-[#E24B4A]" : "text-[#1D9E75]"}`}>
-                  {current.toLocaleString("ar-SA")}
+                  {current.toLocaleString(localeTag)}
                 </td>
-                <td className="px-4 py-3 text-xs text-[#4B5563] tabular-nums">{minStock.toLocaleString("ar-SA")}</td>
+                <td className="px-4 py-3 text-xs text-[#4B5563] tabular-nums">{minStock.toLocaleString(localeTag)}</td>
                 <td className="px-4 py-3">
                   {isLow
-                    ? <span className="flex items-center gap-1 text-[10px] text-[#E24B4A] bg-[#2A1215] px-2 py-0.5 rounded-md font-medium"><i className="ti ti-alert-triangle text-[11px]" aria-hidden="true"/>مخزون منخفض</span>
-                    : <span className="text-[10px] text-[#1D9E75] bg-[#001A12] px-2 py-0.5 rounded-md font-medium">متوفر</span>
+                    ? <span className="flex items-center gap-1 text-[10px] text-[#E24B4A] bg-[#2A1215] px-2 py-0.5 rounded-md font-medium"><i className="ti ti-alert-triangle text-[11px]" aria-hidden="true"/>{locale === "ar" ? "مخزون منخفض" : "Low stock"}</span>
+                    : <span className="text-[10px] text-[#1D9E75] bg-[#001A12] px-2 py-0.5 rounded-md font-medium">{locale === "ar" ? "متوفر" : "Available"}</span>
                   }
                 </td>
               </tr>

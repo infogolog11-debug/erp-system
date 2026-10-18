@@ -1,8 +1,10 @@
 // src/modules/hr/components/HRStats.tsx
-export default function HRStats({ totalEmployees, totalDepts }: { totalEmployees:number; totalDepts:number }) {
+import type { AppLocale } from "@/lib/preferences";
+
+export default function HRStats({ totalEmployees, totalDepts, locale = "ar" }: { totalEmployees:number; totalDepts:number; locale?: AppLocale }) {
   const stats = [
-    { label:"الموظفون النشطون", value:totalEmployees, icon:"users", color:"#1D9E75" },
-    { label:"الأقسام",          value:totalDepts,     icon:"building", color:"#378ADD" },
+    { label:locale === "ar" ? "الموظفون النشطون" : "Active employees", value:totalEmployees, icon:"users", color:"#1D9E75" },
+    { label:locale === "ar" ? "الأقسام" : "Departments",          value:totalDepts,     icon:"building", color:"#378ADD" },
   ];
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

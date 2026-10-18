@@ -2,6 +2,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { updateSettingsBatch }      from "@/modules/settings/actions";
+import type { AppLocale } from "@/lib/preferences";
 
 type Setting = {
   settingKey: string; value: string; valueType: string;
@@ -13,6 +14,7 @@ type Setting = {
 type Props = {
   organizationId: string;
   settings:       Record<string, Record<string, string>>;
+  locale?:        AppLocale;
 };
 
 // تعريف التصنيفات وترتيبها وأيقوناتها
@@ -53,7 +55,7 @@ const SETTING_META: Record<string, { labelAr: string; desc: string; valueType: s
   probation_months:             { labelAr:"مدة الاختبار",                  desc:"شهور فترة الاختبار للموظف الجديد",      valueType:"number", unit:"شهر",  min:1,  max:6   },
 };
 
-export default function SettingsPanel({ organizationId, settings }: Props) {
+export default function SettingsPanel({ organizationId, settings, locale = "ar" }: Props) {
   const [activeTab, setActiveTab] = useState("payroll");
   const [values,    setValues]    = useState<Record<string,string>>(
     Object.fromEntries(
@@ -99,6 +101,26 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
   const activeCat = CATEGORIES.find(c => c.key === activeTab)!;
   const catSettings = settings[activeTab] ?? {};
   const dirtyInTab = Object.keys(catSettings).some(k => dirtyKeys.has(k));
+  const categoryLabels: Record<string, string> = locale === "ar"
+    ? {
+        payroll: "الرواتب",
+        budget: "الميزانية",
+        procurement: "المشتريات",
+        assets: "الأصول الثابتة",
+        hr: "الموارد البشرية",
+        notifications: "الإشعارات",
+      }
+    : {
+        payroll: "Payroll",
+        budget: "Budget",
+        procurement: "Procurement",
+        assets: "Fixed assets",
+        hr: "Human resources",
+        notifications: "Notifications",
+      };
+  const t = locale === "ar"
+    ? { settingCount: "إعداد", saveChanges: "حفظ التغييرات", noSettings: "لا توجد إعدادات لهذا التصنيف", straightLine: "قسط ثابت", declining: "قسط متناقص" }
+    : { settingCount: "settings", saveChanges: "Save changes", noSettings: "No settings for this category", straightLine: "Straight line", declining: "Declining balance" };
 
   return (
     <div className="flex gap-5">
@@ -112,7 +134,7 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
                 : "text-[#6B7280] hover:text-[#D1D5DB] hover:bg-[#0F1117]"
             }`}>
             <i className={`ti ${cat.icon} text-[15px] ${activeTab === cat.key ? cat.color : ""}`} />
-            <span>{cat.labelAr}</span>
+            <span>{categoryLabels[cat.key] ?? cat.labelAr}</span>
             {Object.keys(settings[cat.key] ?? {}).some(k => dirtyKeys.has(k)) && (
               <span className="mr-auto w-1.5 h-1.5 rounded-full bg-[#EF9F27] animate-pulse" />
             )}
@@ -127,8 +149,8 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
           <div className="flex items-center gap-3">
             <i className={`ti ${activeCat.icon} text-[20px] ${activeCat.color}`} />
             <div>
-              <h2 className="text-base font-semibold text-white">{activeCat.labelAr}</h2>
-              <p className="text-xs text-[#4B5563]">{Object.keys(catSettings).length} إعداد</p>
+              <h2 className="text-base font-semibold text-white">{categoryLabels[activeCat.key] ?? activeCat.labelAr}</h2>
+              <p className="text-xs text-[#4B5563]">{Object.keys(catSettings).length} {t.settingCount}</p>
             </div>
           </div>
           {dirtyInTab && (
@@ -138,7 +160,7 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
                 ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0110 10" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
                 : <i className="ti ti-device-floppy" />
               }
-              حفظ التغييرات
+              {t.saveChanges}
             </button>
           )}
         </div>
@@ -156,8 +178,8 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
               <div key={key} className={`flex items-center gap-5 px-6 py-4 transition-colors ${isDirty ? "bg-[#0D0A00]" : "hover:bg-[#161B26]"}`}>
                 {/* Label */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#D1D5DB]">{meta.labelAr}</p>
-                  <p className="text-xs text-[#4B5563] mt-0.5">{meta.desc}</p>
+                  <p className="text-sm font-medium text-[#D1D5DB]">{locale === "ar" ? meta.labelAr : meta.labelAr}</p>
+                  <p className="text-xs text-[#4B5563] mt-0.5">{locale === "ar" ? meta.desc : meta.desc}</p>
                 </div>
 
                 {/* Input */}
@@ -170,8 +192,8 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
                     >
                       {meta.options.map(o => (
                         <option key={o} value={o}>
-                          {o === "straight_line" ? "قسط ثابت" :
-                           o === "declining_balance" ? "قسط متناقص" : o}
+                          {o === "straight_line" ? t.straightLine :
+                           o === "declining_balance" ? t.declining : o}
                         </option>
                       ))}
                     </select>
@@ -213,7 +235,7 @@ export default function SettingsPanel({ organizationId, settings }: Props) {
         {Object.keys(catSettings).length === 0 && (
           <div className="py-16 text-center">
             <i className="ti ti-settings-off text-[40px] text-[#2D3748]" />
-            <p className="text-sm text-[#4B5563] mt-3">لا توجد إعدادات لهذا التصنيف</p>
+            <p className="text-sm text-[#4B5563] mt-3">{t.noSettings}</p>
           </div>
         )}
       </div>

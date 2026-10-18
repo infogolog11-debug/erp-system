@@ -1,13 +1,14 @@
 // src/modules/hr/components/EmployeeList.tsx
 import Link from "next/link";
+import type { AppLocale } from "@/lib/preferences";
 
 import type { EmployeeDisplay } from "@/types/db";
 
-export default function EmployeeList({ employees }: { employees: EmployeeDisplay[] }) {
+export default function EmployeeList({ employees, locale = "ar" }: { employees: EmployeeDisplay[]; locale?: AppLocale }) {
   if (employees.length === 0) return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-12 text-center">
       <i className="ti ti-users text-[40px] text-[#1F2937]" aria-hidden="true" />
-      <p className="text-sm text-[#4B5563] mt-3">لا يوجد موظفون بعد</p>
+      <p className="text-sm text-[#4B5563] mt-3">{locale === "ar" ? "لا يوجد موظفون بعد" : "No employees yet"}</p>
     </div>
   );
   return (
@@ -15,7 +16,7 @@ export default function EmployeeList({ employees }: { employees: EmployeeDisplay
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
-            {["الموظف","الكود","القسم","المنصب","العقد","الحالة",""].map(h=>(
+            {(locale === "ar" ? ["الموظف","الكود","القسم","المنصب","العقد","الحالة",""] : ["Employee","Code","Department","Position","Contract","Status",""]).map(h=>(
               <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
@@ -53,7 +54,7 @@ export default function EmployeeList({ employees }: { employees: EmployeeDisplay
                 </td>
                 <td className="px-4 py-3">
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${emp.isActive ? "bg-[#001A12] text-[#1D9E75]" : "bg-[#2A1215] text-[#E24B4A]"}`}>
-                    {emp.isActive ? "نشط" : "غير نشط"}
+                    {emp.isActive ? (locale === "ar" ? "نشط" : "Active") : (locale === "ar" ? "غير نشط" : "Inactive")}
                   </span>
                 </td>
                 <td className="px-4 py-3">

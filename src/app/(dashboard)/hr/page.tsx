@@ -10,11 +10,13 @@ import HRHeader      from "@/modules/hr/components/HRHeader";
 import HRStats       from "@/modules/hr/components/HRStats";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function HRPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "hr", session.user.role);
@@ -46,12 +48,13 @@ export default async function HRPage({ searchParams: searchParamsPromise }: { se
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <HRHeader total={totalCount} role={session.user.role} />
-      <HRStats totalEmployees={activeCount[0].c} totalDepts={deptCount[0].c} />
-      <EmployeeList employees={allEmployees} />
+      <HRHeader total={totalCount} role={session.user.role} locale={prefs.locale} />
+      <HRStats totalEmployees={activeCount[0].c} totalDepts={deptCount[0].c} locale={prefs.locale} />
+      <EmployeeList employees={allEmployees} locale={prefs.locale} />
       <PaginationBar
         basePath="/hr" currentPage={page} hasNextPage={hasNextPage}
         totalCount={totalCount} pageSize={limit}
+        locale={prefs.locale}
       />
     </div>
   );

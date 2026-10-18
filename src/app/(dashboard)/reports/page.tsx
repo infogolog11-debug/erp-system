@@ -8,10 +8,12 @@ import {
 } from "@/db/schema";
 import { eq, and, sql, count, sum, desc, gte } from "drizzle-orm";
 import ReportsDashboard from "@/modules/reports/components/ReportsDashboard";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function ReportsPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "reports", session.user.role);
@@ -81,11 +83,13 @@ export default async function ReportsPage() {
     .where(eq(grantBudgetLines.organizationId, orgId));
 
   const MONTH_AR = ["","يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const MONTH_EN = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const monthNames = prefs.locale === "ar" ? MONTH_AR : MONTH_EN;
 
   return (
     <ReportsDashboard
       monthlyPR={monthlyPR.map(r => ({
-        label: `${MONTH_AR[Number(r.month)]} ${r.year}`,
+        label: `${monthNames[Number(r.month)]} ${r.year}`,
         total: Number(r.total),
         count: Number(r.cnt),
       }))}
@@ -95,12 +99,12 @@ export default async function ReportsPage() {
         total:  Number(r.total),
       }))}
       topVendors={topVendors.map(r => ({
-        name:       r.vendorName ?? "غير معروف",
+        name:       r.vendorName ?? (prefs.locale === "ar" ? "غير معروف" : "Unknown"),
         poCount:    Number(r.poCount),
         totalValue: Number(r.totalValue),
       }))}
       monthlyPayroll={monthlyPayroll.map(r => ({
-        label:    `${MONTH_AR[r.month]} ${r.year}`,
+        label:    `${monthNames[r.month]} ${r.year}`,
         totalNet: Number(r.totalNet),
         empCount: Number(r.empCount),
       }))}
@@ -114,6 +118,7 @@ export default async function ReportsPage() {
         spent:     Number(budgetSummary[0]?.totalSpent     ?? 0),
         committed: Number(budgetSummary[0]?.totalCommitted ?? 0),
       }}
+      locale={prefs.locale}
     />
   );
 }

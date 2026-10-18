@@ -10,11 +10,15 @@ import InventoryHeader from "@/modules/inventory/components/InventoryHeader";
 import InventoryStats  from "@/modules/inventory/components/InventoryStats";
 import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
+import { getRequestPreferences } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
 export default async function InventoryPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ tab?:string; page?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
+  const localeTag = getLocaleTag(prefs.locale);
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "inventory", session.user.role);
@@ -60,13 +64,14 @@ export default async function InventoryPage({ searchParams: searchParamsPromise 
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <InventoryHeader role={session.user.role} tab={tab} />
-      <InventoryStats totalItems={itemsTotal} totalAssets={assetsTotal} lowStock={lowStockCount[0].c} warehouses={warehouseCount[0].c} />
-      {tab === "assets" ? <AssetList assets={allAssets} /> : <ItemList items={allItems} />}
+      <InventoryHeader role={session.user.role} tab={tab} locale={prefs.locale} />
+      <InventoryStats totalItems={itemsTotal} totalAssets={assetsTotal} lowStock={lowStockCount[0].c} warehouses={warehouseCount[0].c} locale={prefs.locale} />
+      {tab === "assets" ? <AssetList assets={allAssets} locale={prefs.locale} localeTag={localeTag} /> : <ItemList items={allItems} locale={prefs.locale} />}
       <PaginationBar
         basePath="/inventory" currentPage={page} hasNextPage={hasNextPage}
         totalCount={tab === "assets" ? assetsTotal : itemsTotal} pageSize={limit}
         extraParams={{ tab }}
+        locale={prefs.locale}
       />
     </div>
   );
@@ -74,17 +79,22 @@ export default async function InventoryPage({ searchParams: searchParamsPromise 
 
 import type { AssetDisplay } from "@/types/db";
 
-function AssetList({ assets }: { assets: AssetDisplay[] }) {
-  const CONDITION: Record<string,{bg:string;text:string;label:string}> = {
+function AssetList({ assets, locale, localeTag }: { assets: AssetDisplay[]; locale: "ar" | "en"; localeTag: string }) {
+  const CONDITION: Record<string,{bg:string;text:string;label:string}> = locale === "ar" ? {
     new:  { bg:"bg-[#001A12]",  text:"text-[#1D9E75]", label:"جديد" },
     good: { bg:"bg-[#0A1628]",  text:"text-[#378ADD]", label:"جيد" },
     fair: { bg:"bg-[#271E0A]",  text:"text-[#EF9F27]", label:"مقبول" },
     poor: { bg:"bg-[#2A1215]",  text:"text-[#E24B4A]", label:"رديء" },
+  } : {
+    new:  { bg:"bg-[#001A12]",  text:"text-[#1D9E75]", label:"New" },
+    good: { bg:"bg-[#0A1628]",  text:"text-[#378ADD]", label:"Good" },
+    fair: { bg:"bg-[#271E0A]",  text:"text-[#EF9F27]", label:"Fair" },
+    poor: { bg:"bg-[#2A1215]",  text:"text-[#E24B4A]", label:"Poor" },
   };
   if (assets.length === 0) return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-12 text-center">
       <i className="ti ti-box text-[40px] text-[#1F2937]" aria-hidden="true" />
-      <p className="text-sm text-[#4B5563] mt-3">لا توجد أصول ثابتة</p>
+      <p className="text-sm text-[#4B5563] mt-3">{locale === "ar" ? "لا توجد أصول ثابتة" : "No fixed assets"}</p>
     </div>
   );
   return (
@@ -92,7 +102,10 @@ function AssetList({ assets }: { assets: AssetDisplay[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
-            {["الكود","الأصل","تاريخ الشراء","التكلفة","القيمة الحالية","الحالة","الموقع"].map(h=>(
+            {(locale === "ar"
+              ? ["الكود","الأصل","تاريخ الشراء","التكلفة","القيمة الحالية","الحالة","الموقع"]
+              : ["Code","Asset","Purchase date","Cost","Current value","Condition","Location"]
+            ).map(h=>(
               <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
@@ -104,9 +117,9 @@ function AssetList({ assets }: { assets: AssetDisplay[] }) {
               <tr key={a.id} className={`hover:bg-[#161B26] ${i < assets.length-1 ? "border-b border-[#1F2937]" : ""}`}>
                 <td className="px-4 py-3 font-mono text-xs text-[#4B5563]">{a.code}</td>
                 <td className="px-4 py-3 font-medium text-[#D1D5DB]">{a.name}</td>
-                <td className="px-4 py-3 text-xs text-[#6B7280]">{new Date(a.purchaseDate).toLocaleDateString("ar-SA")}</td>
-                <td className="px-4 py-3 text-xs text-[#6B7280] tabular-nums">{Number(a.purchaseCost).toLocaleString("ar-SA")}</td>
-                <td className="px-4 py-3 text-xs text-[#1D9E75] font-medium tabular-nums">{a.currentValue ? Number(a.currentValue).toLocaleString("ar-SA") : "—"}</td>
+                <td className="px-4 py-3 text-xs text-[#6B7280]">{new Date(a.purchaseDate).toLocaleDateString(localeTag)}</td>
+                <td className="px-4 py-3 text-xs text-[#6B7280] tabular-nums">{Number(a.purchaseCost).toLocaleString(localeTag)}</td>
+                <td className="px-4 py-3 text-xs text-[#1D9E75] font-medium tabular-nums">{a.currentValue ? Number(a.currentValue).toLocaleString(localeTag) : "—"}</td>
                 <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${cond.bg} ${cond.text}`}>{cond.label}</span></td>
                 <td className="px-4 py-3 text-xs text-[#6B7280]">{a.location ?? "—"}</td>
               </tr>

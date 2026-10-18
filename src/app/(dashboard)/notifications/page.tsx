@@ -5,6 +5,8 @@ import { db }            from "@/db";
 import { notifications } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
 import Link              from "next/link";
+import { getRequestPreferences } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
 const TYPE_STYLE: Record<string,{ icon:string; color:string; bg:string; border:string }> = {
   approval: { icon:"ti-shield-check",   color:"text-[#378ADD]", bg:"bg-[#0A1628]", border:"border-[#1A3060]" },
@@ -17,6 +19,8 @@ const TYPE_STYLE: Record<string,{ icon:string; color:string; bg:string; border:s
 export default async function NotificationsPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const prefs = await getRequestPreferences();
+  const localeTag = getLocaleTag(prefs.locale);
   const userId  = session.user.id;
   const orgId   = session.user.organizationId;
   const role   = session.user.role;
@@ -31,6 +35,9 @@ export default async function NotificationsPage() {
 
   const unread = all.filter(n => !n.isRead);
   const read   = all.filter(n =>  n.isRead);
+  const t = prefs.locale === "ar"
+    ? { title:"الإشعارات", unread:`${unread.length} غير مقروء`, total:`${all.length} إجمالاً`, readAll:"قراءة الكل", empty:"لا توجد إشعارات", unreadGroup:"غير مقروء", readGroup:"مقروء" }
+    : { title:"Notifications", unread:`${unread.length} unread`, total:`${all.length} total`, readAll:"Mark all read", empty:"No notifications", unreadGroup:"Unread", readGroup:"Read" };
 
   function Group({ title, items }: { title:string; items:typeof all }) {
     return items.length === 0 ? null : (
@@ -46,10 +53,10 @@ export default async function NotificationsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-3">
                   <p className={`text-sm font-medium ${!n.isRead ? "text-white" : "text-[#6B7280]"}`}>
-                    {n.titleAr ?? n.title}
+                    {prefs.locale === "ar" ? (n.titleAr ?? n.title) : n.title}
                   </p>
                   <span className="text-[10px] text-[#4B5563] shrink-0">
-                    {new Date(n.createdAt).toLocaleDateString("ar", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })}
+                    {new Date(n.createdAt).toLocaleDateString(localeTag, { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })}
                   </span>
                 </div>
                 <p className="text-xs text-[#4B5563] mt-1">{n.body}</p>
@@ -70,15 +77,15 @@ export default async function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-white flex items-center gap-3">
-            <i className="ti ti-bell text-[#0F6E56]" />الإشعارات
+            <i className="ti ti-bell text-[#0F6E56]" />{t.title}
           </h1>
-          <p className="text-sm text-[#6B7280] mt-1">{unread.length} غير مقروء · {all.length} إجمالاً</p>
+          <p className="text-sm text-[#6B7280] mt-1">{t.unread} · {t.total}</p>
         </div>
         {unread.length > 0 && (
           <form action="/api/notifications/read-all" method="POST">
             <button type="submit"
               className="text-xs text-[#0F6E56] hover:text-[#1D9E75] border border-[#0F3D28] bg-[#001A12] px-3 py-1.5 rounded-lg transition-all">
-              <i className="ti ti-checks ml-1" />قراءة الكل
+              <i className="ti ti-checks ml-1" />{t.readAll}
             </button>
           </form>
         )}
@@ -87,12 +94,12 @@ export default async function NotificationsPage() {
       {all.length === 0 ? (
         <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-14 text-center">
           <i className="ti ti-bell-off text-[48px] text-[#2D3748]" />
-          <p className="text-sm text-[#4B5563] mt-3">لا توجد إشعارات</p>
+          <p className="text-sm text-[#4B5563] mt-3">{t.empty}</p>
         </div>
       ) : (
         <>
-          <Group title="غير مقروء" items={unread} />
-          <Group title="مقروء"      items={read}   />
+          <Group title={t.unreadGroup} items={unread} />
+          <Group title={t.readGroup} items={read} />
         </>
       )}
     </div>
