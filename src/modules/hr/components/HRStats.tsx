@@ -3,7 +3,7 @@ import type { AppLocale } from "@/lib/preferences";
 
 export default function HRStats({ totalEmployees, totalDepts, locale = "ar" }: { totalEmployees:number; totalDepts:number; locale?: AppLocale }) {
   const stats = [
-    { label:locale === "ar" ? "الموظفون النشطون" : "Active employees", value:totalEmployees, icon:"users", color:"#1D9E75" },
+    { label:locale === "ar" ? "الوكلاء النشطون" : "Active agents", value:totalEmployees, icon:"users", color:"#1D9E75" },
     { label:locale === "ar" ? "الأقسام" : "Departments",          value:totalDepts,     icon:"building", color:"#378ADD" },
   ];
   return (

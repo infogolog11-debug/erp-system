@@ -5,8 +5,8 @@ import type { AppLocale } from "@/lib/preferences";
 
 type Result = { type:string; icon:string; color:string; label:string; sub:string; status:string; href:string };
 const TYPE_LABELS = {
-  ar: { grant:"منحة", vendor:"مورد", pr:"طلب شراء", employee:"موظف", asset:"أصل" },
-  en: { grant:"Grant", vendor:"Vendor", pr:"Purchase Request", employee:"Employee", asset:"Asset" },
+  ar: { grant:"منحة", vendor:"مورد", pr:"طلب شراء", employee:"وكيل", asset:"أصل" },
+  en: { grant:"Grant", vendor:"Vendor", pr:"Purchase Request", employee:"Agent", asset:"Asset" },
 } as const;
 
 export default function GlobalSearch({ locale }: { locale: AppLocale }) {

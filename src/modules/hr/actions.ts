@@ -82,7 +82,7 @@ export async function processPayroll(
     });
 
     if (!activeContracts.length)
-      return { success:false as const, error:"لا يوجد موظفون نشطون" };
+      return { success:false as const, error:"لا يوجد وكلاء نشطون" };
 
     // ── حساب أيام العمل الفعلية في الشهر ──
     // ── جلب الإعدادات الديناميكية من قاعدة البيانات ──
@@ -108,8 +108,8 @@ export async function processPayroll(
       ),
     });
 
-    // ── بونص/خصم مُدخَل فعلياً لكل موظف بهذه الدورة (بدل قيمة كتالوج موحّدة
-    //    لكل الموظفين) — نجمعها حسب الموظف لتطبيقها أثناء الحسبة ──
+    // ── بونص/خصم مُدخَل فعلياً لكل وكيل بهذه الدورة (بدل قيمة كتالوج موحّدة
+    //    لكل الوكلاء) — نجمعها حسب الوكيل لتطبيقها أثناء الحسبة ──
     const adjustmentsThisPeriod = await db.query.payrollAdjustments.findMany({
       where: and(
         eq(payrollAdjustments.organizationId, organizationId),
@@ -127,8 +127,8 @@ export async function processPayroll(
     }
 
     // ── تحسين أداء: جلب كل بنود الميزانية المرتبطة دفعة واحدة بدل استعلام
-    //    منفصل لكل موظف (كان checkBudgetCeiling يُستدعى داخل الحلقة N مرة).
-    //    كمان يسمح بتتبّع مجموع تراكمي إذا موظفين مختلفين يشاركون نفس البند
+    //    منفصل لكل وكيل (كان checkBudgetCeiling يُستدعى داخل الحلقة N مرة).
+    //    كمان يسمح بتتبّع مجموع تراكمي إذا وكلاء مختلفين يشاركون نفس البند
     //    بنفس دورة الرواتب — وهذا كان فحصاً ناقصاً بالنسخة القديمة. ──
     const budgetLineIds = [...new Set(
       activeContracts.map(c => c.budgetLineId).filter((id): id is string => !!id)
@@ -167,12 +167,12 @@ export async function processPayroll(
       let totalDeductions = 0;
 
       // ── تجميع كل سطور الراتب بالذاكرة أولاً، ثم إدراج دفعة واحدة (batch insert)
-      //    بدل استعلام INSERT منفصل لكل موظف — نفس الشي لتحديثات الميزانية ──
+      //    بدل استعلام INSERT منفصل لكل وكيل — نفس الشي لتحديثات الميزانية ──
       const payrollLineRows: (typeof payrollLines.$inferInsert)[] = [];
       const budgetSpendDelta = new Map<string, number>();
 
       for (const contract of activeContracts) {
-        // ── تجميع بيانات الحضور للموظف ──
+        // ── تجميع بيانات الحضور للوكيل ──
         const empAtt = attendanceRecords.filter(
           a => a.employeeId === contract.employeeId
         );
@@ -192,10 +192,10 @@ export async function processPayroll(
         };
 
         // ── مكونات الراتب: أولوية لقيمة العقد الفردية، وإلا رجوع لكتالوج المنظمة ──
-        // (سابقاً: كل الموظفين كانوا يأخذون نفس بدل السكن/المواصلات من الكتالوج
+        // (سابقاً: كل الوكلاء كانوا يأخذون نفس بدل السكن/المواصلات من الكتالوج
         //  بغض النظر عن عقدهم الفعلي — هذا كان يعطي أرقام رواتب غير دقيقة)
-        // ── البونص/الخصم: مجموع ما أُدخل فعلياً لهذا الموظف بهذه الدورة
-        //    (بدل نفس قيمة الكتالوج الافتراضية لكل الموظفين) ──
+        // ── البونص/الخصم: مجموع ما أُدخل فعلياً لهذا الوكيل بهذه الدورة
+        //    (بدل نفس قيمة الكتالوج الافتراضية لكل الوكلاء) ──
         const empAdjustments = adjustmentsByEmployee.get(contract.employeeId);
 
         const contractData: ContractData = {
@@ -222,17 +222,17 @@ export async function processPayroll(
         });
 
         // ── فحص ميزانية المنحة من الذاكرة (بيانات مُحمَّلة مسبقاً + مجموع تراكمي
-        //    لهذه الدورة) بدل استعلام قاعدة بيانات منفصل لكل موظف ──
+        //    لهذه الدورة) بدل استعلام قاعدة بيانات منفصل لكل وكيل ──
         if (contract.budgetLineId) {
           const line = budgetLinesById.get(contract.budgetLineId);
           if (!line) {
-            throw new Error(`بند الميزانية غير موجود للموظف ${contract.employeeId}`);
+            throw new Error(`بند الميزانية غير موجود للوكيل ${contract.employeeId}`);
           }
           const alreadyReserved = reservedThisRun.get(contract.budgetLineId) ?? 0;
           const available = line.planned - line.committed - line.spent - alreadyReserved;
           if (calc.netSalary > available) {
             throw new Error(
-              `ميزانية غير كافية للموظف ${contract.employeeId}: الميزانية المتاحة ${available.toFixed(2)} — المطلوب ${calc.netSalary.toFixed(2)}`
+              `ميزانية غير كافية للوكيل ${contract.employeeId}: الميزانية المتاحة ${available.toFixed(2)} — المطلوب ${calc.netSalary.toFixed(2)}`
             );
           }
           reservedThisRun.set(contract.budgetLineId, alreadyReserved + calc.netSalary);

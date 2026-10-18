@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { label:{ ar:"الخريطة الجغرافية", en:"GIS Map" }, href:"/reports/gis-map", icon:"map-pin", roles:["super_admin","admin","finance","viewer"] },
   { label:{ ar:"الموردون", en:"Vendors" },       href:"/vendors",       icon:"truck",         roles:["super_admin","admin","finance","procurement","viewer"] },
   { label:{ ar:"المشتريات", en:"Procurement" },      href:"/procurement",   icon:"shopping-cart", roles:["super_admin","admin","finance","procurement","viewer"] },
-  { label:{ ar:"الموارد البشرية", en:"HR" },href:"/hr",            icon:"users",         roles:["super_admin","admin","hr","viewer"] },
+  { label:{ ar:"الوكلاء (HR)", en:"Agents (HR)" },href:"/hr",            icon:"users",         roles:["super_admin","admin","hr","viewer"] },
   { label:{ ar:"المخزون", en:"Inventory" },        href:"/inventory",     icon:"package",       roles:["super_admin","admin","inventory","procurement","viewer"] },
   { label:{ ar:"المحاسبة", en:"Accounting" },       href:"/accounting",    icon:"calculator",    roles:["super_admin","admin","finance","viewer"] },
   { label:{ ar:"الإشعارات", en:"Notifications" },      href:"/notifications", icon:"bell",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },

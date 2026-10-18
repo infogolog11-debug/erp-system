@@ -23,8 +23,8 @@ export default async function HRPage({ searchParams: searchParamsPromise }: { se
   if (!canView(__perm)) redirect("/");
 
   // إصلاح (v34-تتمة-3، بند مفتوح موثّق بـSECURITY_NOTES.md § v32): كانت
-  // هذه الصفحة تجلب كل موظفي المنظمة بلا حد أقصى — نفس نمط vendors/grants
-  // المُصلَح سابقاً، بس لم يُطبَّق هنا. عدد الموظفين ينمو مع الوقت وهذا
+  // هذه الصفحة تجلب كل وكلاء المنظمة بلا حد أقصى — نفس نمط vendors/grants
+  // المُصلَح سابقاً، بس لم يُطبَّق هنا. عدد الوكلاء ينمو مع الوقت وهذا
   // كان يصير استعلاماً أثقل بكل فتح للصفحة.
   const { limit, offset, page } = parsePagination(searchParams);
   const where = and(eq(employees.organizationId, orgId), eq(employees.isArchived, false));

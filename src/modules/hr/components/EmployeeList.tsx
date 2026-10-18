@@ -8,7 +8,7 @@ export default function EmployeeList({ employees, locale = "ar" }: { employees: 
   if (employees.length === 0) return (
     <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-12 text-center">
       <i className="ti ti-users text-[40px] text-[#1F2937]" aria-hidden="true" />
-      <p className="text-sm text-[#4B5563] mt-3">{locale === "ar" ? "لا يوجد موظفون بعد" : "No employees yet"}</p>
+      <p className="text-sm text-[#4B5563] mt-3">{locale === "ar" ? "لا يوجد وكلاء بعد" : "No agents yet"}</p>
     </div>
   );
   return (
@@ -16,7 +16,7 @@ export default function EmployeeList({ employees, locale = "ar" }: { employees: 
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
-            {(locale === "ar" ? ["الموظف","الكود","القسم","المنصب","العقد","الحالة",""] : ["Employee","Code","Department","Position","Contract","Status",""]).map(h=>(
+            {(locale === "ar" ? ["الوكيل","الكود","القسم","المنصب","العقد","الحالة",""] : ["Agent","Code","Department","Position","Contract","Status",""]).map(h=>(
               <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
