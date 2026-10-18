@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { recordApprovalDecision } from "@/lib/approval/matrix";
 import ApprovalBadge from "./ApprovalBadge";
+import type { AppLocale } from "@/lib/preferences";
+import { getLocaleTag } from "@/lib/i18n";
 
 type Level = {
   level: number; levelName: string; ruleId: string;
@@ -12,10 +14,11 @@ type Level = {
 
 export default function ApprovalPanel({
   recordType, recordId, organizationId, userId,
-  levels, amount, revalidatePath: rPath,
+  levels, amount, revalidatePath: rPath, locale = "ar",
 }: {
   recordType: string; recordId: string; organizationId: string;
   userId: string; levels: Level[]; amount: number; revalidatePath?: string;
+  locale?: AppLocale;
 }) {
   const [isPending, start] = useTransition();
   const [comments, setComments] = useState("");
@@ -26,6 +29,38 @@ export default function ApprovalPanel({
   const isMyTurn = !!currentLevel;
   const isFullyApproved = levels.every(l => l.status === "completed");
   const isRejected = levels.some(l => l.status === "rejected");
+  const localeTag = getLocaleTag(locale);
+  const t = locale === "ar"
+    ? {
+        fullyApproved: "✅ معتمد بالكامل",
+        rejected: "✗ مرفوض",
+        title: "سير الموافقات",
+        stages: "مراحل",
+        waitingApproval: "بانتظار الموافقة...",
+        waiting: "في الانتظار",
+        turnPrefix: "دورك للموافقة على المرحلة",
+        commentsPlaceholder: "ملاحظات اختيارية...",
+        approve: "موافقة",
+        return: "إعادة",
+        reject: "رفض",
+        fullApprovalDone: "✅ تمت الموافقة الكاملة",
+        decisionRecorded: "تم تسجيل القرار",
+      }
+    : {
+        fullyApproved: "✅ Fully approved",
+        rejected: "✗ Rejected",
+        title: "Approval flow",
+        stages: "stages",
+        waitingApproval: "Awaiting approval...",
+        waiting: "Pending",
+        turnPrefix: "It is your turn to approve level",
+        commentsPlaceholder: "Optional comments...",
+        approve: "Approve",
+        return: "Return",
+        reject: "Reject",
+        fullApprovalDone: "✅ Fully approved",
+        decisionRecorded: "Decision recorded",
+      };
 
   function decide(decision: "approved"|"rejected"|"returned") {
     if (!currentLevel) return;
@@ -41,7 +76,7 @@ export default function ApprovalPanel({
         revalidatePath: rPath,
       });
       if (res.success) {
-        setResult(res.data.isFullyApproved ? "✅ تمت الموافقة الكاملة" : "تم تسجيل القرار");
+        setResult(res.data.isFullyApproved ? t.fullApprovalDone : t.decisionRecorded);
         setComments("");
       } else setError(res.error);
     });
@@ -52,16 +87,16 @@ export default function ApprovalPanel({
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <i className="ti ti-shield-check text-[#0F6E56]" />
-          سير الموافقات
+          {t.title}
         </h2>
         {isFullyApproved && (
           <span className="text-xs bg-[#001A12] text-[#1D9E75] border border-[#0F3D28] px-3 py-1 rounded-full font-medium">
-            ✅ معتمد بالكامل
+            {t.fullyApproved}
           </span>
         )}
         {isRejected && (
           <span className="text-xs bg-[#2A1215] text-[#E24B4A] border border-[#4A1C20] px-3 py-1 rounded-full font-medium">
-            ✗ مرفوض
+            {t.rejected}
           </span>
         )}
       </div>
@@ -70,7 +105,7 @@ export default function ApprovalPanel({
       <div className="flex items-center gap-3 py-2">
         <ApprovalBadge levels={levels} />
         <span className="text-xs text-[#4B5563] mr-auto">
-          {levels.filter(l => l.status === "completed").length}/{levels.length} مراحل
+          {levels.filter(l => l.status === "completed").length}/{levels.length} {t.stages}
         </span>
       </div>
 
@@ -92,17 +127,17 @@ export default function ApprovalPanel({
             <div className="flex items-center gap-2">
               {lvl.status === "completed" && (
                 <span className="text-[11px] text-[#1D9E75] flex items-center gap-1">
-                  <i className="ti ti-check" />{lvl.decidedAt ? new Date(lvl.decidedAt).toLocaleDateString("ar") : ""}
+                  <i className="ti ti-check" />{lvl.decidedAt ? new Date(lvl.decidedAt).toLocaleDateString(localeTag) : ""}
                 </span>
               )}
               {lvl.status === "current" && (
-                <span className="text-[11px] text-[#EF9F27] animate-pulse">بانتظار الموافقة...</span>
+                <span className="text-[11px] text-[#EF9F27] animate-pulse">{t.waitingApproval}</span>
               )}
               {lvl.status === "rejected" && (
-                <span className="text-[11px] text-[#E24B4A] flex items-center gap-1"><i className="ti ti-x" />مرفوض</span>
+                <span className="text-[11px] text-[#E24B4A] flex items-center gap-1"><i className="ti ti-x" />{locale === "ar" ? "مرفوض" : "Rejected"}</span>
               )}
               {lvl.status === "pending" && (
-                <span className="text-[11px] text-[#2D3748]">في الانتظار</span>
+                <span className="text-[11px] text-[#2D3748]">{t.waiting}</span>
               )}
             </div>
           </div>
@@ -114,12 +149,12 @@ export default function ApprovalPanel({
         <div className="pt-3 border-t border-[#1F2937] space-y-3">
           <p className="text-xs text-[#9CA3AF]">
             <i className="ti ti-user-check text-[#EF9F27] ml-1" />
-            دورك للموافقة على المرحلة {currentLevel?.level}: <strong className="text-white">{currentLevel?.levelName}</strong>
+            {t.turnPrefix} {currentLevel?.level}: <strong className="text-white">{currentLevel?.levelName}</strong>
           </p>
           <textarea
             value={comments}
             onChange={e => setComments(e.target.value)}
-            placeholder="ملاحظات اختيارية..."
+            placeholder={t.commentsPlaceholder}
             rows={2}
             className="w-full bg-[#161B26] border border-[#2D3748] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#4B5563] focus:outline-none focus:border-[#0F6E56] resize-none"
           />
@@ -128,15 +163,15 @@ export default function ApprovalPanel({
           <div className="flex items-center gap-2">
             <button onClick={() => decide("approved")} disabled={isPending}
               className="flex-1 flex items-center justify-center gap-2 bg-[#0F6E56] hover:bg-[#1D9E75] disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-xl transition-all">
-              <i className="ti ti-thumb-up" />موافقة
+              <i className="ti ti-thumb-up" />{t.approve}
             </button>
             <button onClick={() => decide("returned")} disabled={isPending}
               className="px-4 py-2.5 text-sm text-[#EF9F27] border border-[#3D2E00] hover:bg-[#1A1400] rounded-xl transition-all disabled:opacity-50">
-              <i className="ti ti-arrow-back-up" /> إعادة
+              <i className="ti ti-arrow-back-up" /> {t.return}
             </button>
             <button onClick={() => decide("rejected")} disabled={isPending}
               className="px-4 py-2.5 text-sm text-[#E24B4A] border border-[#4A1C20] hover:bg-[#2A1215] rounded-xl transition-all disabled:opacity-50">
-              <i className="ti ti-thumb-down" /> رفض
+              <i className="ti ti-thumb-down" /> {t.reject}
             </button>
           </div>
         </div>

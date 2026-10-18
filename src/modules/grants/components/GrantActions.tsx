@@ -3,24 +3,24 @@
 import { useTransition } from "react";
 import { approveGrant } from "@/modules/grants/actions";
 import { useRouter } from "next/navigation";
-
-const STATUS_TRANSITIONS: Record<string, { label:string; action:string; style:string }[]> = {
-  draft:     [{ label:"إرسال للموافقة", action:"submit",  style:"bg-[#185FA5] hover:bg-[#1E75C8]" }],
-  submitted: [
-    { label:"اعتماد",  action:"approve", style:"bg-[#0F6E56] hover:bg-[#1D9E75]" },
-    { label:"رفض",     action:"reject",  style:"bg-[#2A1215] hover:bg-[#3A1920] text-[#E24B4A] border border-[#4A2020]" },
-  ],
-  approved:  [{ label:"إغلاق / مكتملة", action:"done", style:"bg-[#374151] hover:bg-[#4B5563]" }],
-};
+import type { AppLocale } from "@/lib/preferences";
 
 export default function GrantActions({
-  grantId, status, role, userId, organizationId,
-}: { grantId:string; status:string; role:string; userId:string; organizationId:string }) {
+  grantId, status, role, userId, organizationId, locale = "ar",
+}: { grantId:string; status:string; role:string; userId:string; organizationId:string; locale?: AppLocale }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const statusTransitions: Record<string, { label:string; action:string; style:string }[]> = {
+    draft:     [{ label: locale === "ar" ? "إرسال للموافقة" : "Submit for approval", action:"submit",  style:"bg-[#185FA5] hover:bg-[#1E75C8]" }],
+    submitted: [
+      { label: locale === "ar" ? "اعتماد" : "Approve",  action:"approve", style:"bg-[#0F6E56] hover:bg-[#1D9E75]" },
+      { label: locale === "ar" ? "رفض" : "Reject",     action:"reject",  style:"bg-[#2A1215] hover:bg-[#3A1920] text-[#E24B4A] border border-[#4A2020]" },
+    ],
+    approved:  [{ label: locale === "ar" ? "إغلاق / مكتملة" : "Close / Complete", action:"done", style:"bg-[#374151] hover:bg-[#4B5563]" }],
+  };
 
   const canApprove = ["super_admin","admin","finance_manager"].includes(role);
-  const actions    = STATUS_TRANSITIONS[status] ?? [];
+  const actions    = statusTransitions[status] ?? [];
   const visible    = actions.filter((a) => {
     if (a.action === "approve" || a.action === "reject") return canApprove;
     return true;

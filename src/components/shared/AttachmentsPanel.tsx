@@ -1,9 +1,10 @@
 // مكوّن المرفقات — يُستخدم في أي صفحة تفاصيل
 "use client";
 import { useState, useRef, useTransition } from "react";
+import type { AppLocale } from "@/lib/preferences";
 
 type Attachment = { id:string; fileName:string; fileSize:number; mimeType:string; url:string; uploadedBy?:string; createdAt?:string };
-type Props = { recordType:string; recordId:string; initial:Attachment[]; };
+type Props = { recordType:string; recordId:string; initial:Attachment[]; locale?: AppLocale; };
 
 const MIME_ICON: Record<string,string> = {
   "application/pdf":  "ti-file-type-pdf",
@@ -31,13 +32,34 @@ function fmtSize(b:number) {
   return b > 1024*1024 ? `${(b/1024/1024).toFixed(1)} MB` : `${(b/1024).toFixed(0)} KB`;
 }
 
-export default function AttachmentsPanel({ recordType, recordId, initial }: Props) {
+export default function AttachmentsPanel({ recordType, recordId, initial, locale = "ar" }: Props) {
   const [items,   setItems]   = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
   const [drag,    setDrag]    = useState(false);
   const [isPending, start]    = useTransition();
   const inputRef              = useRef<HTMLInputElement>(null);
+  const t = locale === "ar"
+    ? {
+        uploadFailed: "فشل الرفع",
+        uploadError: "حدث خطأ في الرفع",
+        title: "المرفقات",
+        uploadFile: "رفع ملف",
+        uploading: "جارٍ الرفع...",
+        dragHint: "اسحب الملفات هنا أو انقر للاختيار",
+        typesHint: "PDF · Word · Excel · صور — حتى 10MB",
+        empty: "لا توجد مرفقات بعد",
+      }
+    : {
+        uploadFailed: "Upload failed",
+        uploadError: "Upload error",
+        title: "Attachments",
+        uploadFile: "Upload file",
+        uploading: "Uploading...",
+        dragHint: "Drag files here or click to choose",
+        typesHint: "PDF · Word · Excel · Images — up to 10MB",
+        empty: "No attachments yet",
+      };
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
@@ -54,8 +76,8 @@ export default function AttachmentsPanel({ recordType, recordId, initial }: Prop
         const res  = await fetch("/api/upload", { method:"POST", body:fd });
         const data = await res.json();
         if (data.success) setItems(p => [...p, data.attachment]);
-        else setError(data.error ?? "فشل الرفع");
-      } catch { setError("حدث خطأ في الرفع"); }
+        else setError(data.error ?? t.uploadFailed);
+      } catch { setError(t.uploadError); }
     }
     setLoading(false);
   }
@@ -74,14 +96,14 @@ export default function AttachmentsPanel({ recordType, recordId, initial }: Prop
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <i className="ti ti-paperclip text-[#0F6E56]" />
-          المرفقات
+          {t.title}
           {items.length > 0 && (
             <span className="text-[11px] bg-[#161B26] border border-[#2D3748] text-[#6B7280] px-2 py-0.5 rounded-full">{items.length}</span>
           )}
         </h2>
         <button onClick={() => inputRef.current?.click()}
           className="flex items-center gap-1.5 text-xs bg-[#0F6E56] hover:bg-[#1D9E75] text-white px-3 py-1.5 rounded-lg transition-all">
-          <i className="ti ti-upload" />رفع ملف
+          <i className="ti ti-upload" />{t.uploadFile}
         </button>
         <input ref={inputRef} type="file" multiple className="hidden"
           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.webp"
@@ -103,13 +125,13 @@ export default function AttachmentsPanel({ recordType, recordId, initial }: Prop
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
               <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            جارٍ الرفع...
+            {t.uploading}
           </div>
         ) : (
           <>
             <i className="ti ti-cloud-upload text-[28px] text-[#2D3748]" />
-            <p className="text-xs text-[#4B5563] mt-2">اسحب الملفات هنا أو انقر للاختيار</p>
-            <p className="text-[10px] text-[#2D3748] mt-1">PDF · Word · Excel · صور — حتى 10MB</p>
+            <p className="text-xs text-[#4B5563] mt-2">{t.dragHint}</p>
+            <p className="text-[10px] text-[#2D3748] mt-1">{t.typesHint}</p>
           </>
         )}
       </div>
@@ -156,7 +178,7 @@ export default function AttachmentsPanel({ recordType, recordId, initial }: Prop
       )}
 
       {items.length === 0 && !loading && (
-        <p className="text-xs text-[#2D3748] text-center py-2">لا توجد مرفقات بعد</p>
+        <p className="text-xs text-[#2D3748] text-center py-2">{t.empty}</p>
       )}
     </div>
   );

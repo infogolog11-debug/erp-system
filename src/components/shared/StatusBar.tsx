@@ -1,12 +1,21 @@
 // src/components/shared/StatusBar.tsx
-const STATUS_LABELS: Record<string,string> = {
-  draft:"مسودة", submitted:"قيد المراجعة", approved:"معتمد",
-  rejected:"مرفوض", done:"مكتمل", cancelled:"ملغي",
+import type { AppLocale } from "@/lib/preferences";
+
+const STATUS_LABELS: Record<AppLocale, Record<string,string>> = {
+  ar: {
+    draft:"مسودة", submitted:"قيد المراجعة", approved:"معتمد",
+    rejected:"مرفوض", done:"مكتمل", cancelled:"ملغي",
+  },
+  en: {
+    draft:"Draft", submitted:"In review", approved:"Approved",
+    rejected:"Rejected", done:"Completed", cancelled:"Cancelled",
+  },
 };
 
 export default function StatusBar({
   states, current,
-}: { states: string[]; current: string }) {
+  locale = "ar",
+}: { states: string[]; current: string; locale?: AppLocale }) {
   const currentIdx = states.indexOf(current);
   const isRejected = current === "rejected" || current === "cancelled";
 
@@ -42,7 +51,7 @@ export default function StatusBar({
                     ? isRejected ? "text-[#E24B4A]" : "text-[#1D9E75]"
                     : isDone ? "text-[#6B7280]" : "text-[#374151]"
                 }`}>
-                  {STATUS_LABELS[state] ?? state}
+                  {STATUS_LABELS[locale][state] ?? state}
                 </span>
               </div>
               {/* الخط الواصل */}

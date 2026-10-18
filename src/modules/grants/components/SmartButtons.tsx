@@ -3,13 +3,15 @@ import { db } from "@/db";
 import { purchaseRequests, payrollLines, budgetAllocations } from "@/db/schema";
 import { eq, and, count } from "drizzle-orm";
 import Link from "next/link";
+import type { AppLocale } from "@/lib/preferences";
 
 interface SmartButtonsProps {
   grantId: string;
   organizationId: string;
+  locale?: AppLocale;
 }
 
-export default async function SmartButtons({ grantId, organizationId }: SmartButtonsProps) {
+export default async function SmartButtons({ grantId, organizationId, locale = "ar" }: SmartButtonsProps) {
   const [prs, payrolls, allocations] = await Promise.all([
     db.select({ c: count() }).from(purchaseRequests)
       .where(and(eq(purchaseRequests.grantId, grantId), eq(purchaseRequests.isArchived, false))),
@@ -20,9 +22,9 @@ export default async function SmartButtons({ grantId, organizationId }: SmartBut
   ]);
 
   const buttons = [
-    { label:"طلبات الشراء", count: prs[0].c,        icon:"shopping-cart", href:`/procurement?grantId=${grantId}`,  color:"blue"   },
-    { label:"الرواتب",      count: payrolls[0].c,    icon:"users",         href:`/hr/payroll?grantId=${grantId}`,   color:"purple" },
-    { label:"التخصيصات",   count: allocations[0].c,  icon:"coins",         href:`/grants/${grantId}/allocations`,   color:"teal"   },
+    { label: locale === "ar" ? "طلبات الشراء" : "Purchase requests", count: prs[0].c,        icon:"shopping-cart", href:`/procurement?grantId=${grantId}`,  color:"blue"   },
+    { label: locale === "ar" ? "الرواتب" : "Payroll",      count: payrolls[0].c,    icon:"users",         href:`/hr/payroll?grantId=${grantId}`,   color:"purple" },
+    { label: locale === "ar" ? "التخصيصات" : "Allocations",   count: allocations[0].c,  icon:"coins",         href:`/grants/${grantId}/allocations`,   color:"teal"   },
   ];
 
   const COLOR: Record<string,string> = {
