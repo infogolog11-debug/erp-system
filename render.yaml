@@ -28,7 +28,7 @@ services:
     envVars:
       # ── 1. قاعدة البيانات (Supabase PostgreSQL) ──
       - key: DATABASE_URL
-        value: postgresql://postgres:U0kJOCYez4WnIoDw@db.txlcfxfuiphwicpduccc.supabase.co:5432/postgres?sslmode=require
+        value: postgresql://postgres.txlcfxfuiphwicpduccc:U0kJOCYez4WnIoDw@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require
 
       # ── 2. إعدادات Node والإنتاج ──
       - key: NODE_ENV
@@ -98,7 +98,7 @@ services:
     startCommand: npm run audit:verify
     envVars:
       - key: DATABASE_URL
-        value: postgresql://postgres:U0kJOCYez4WnIoDw@db.txlcfxfuiphwicpduccc.supabase.co:5432/postgres?sslmode=require
+        value: postgresql://postgres.txlcfxfuiphwicpduccc:U0kJOCYez4WnIoDw@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require
       - key: NODE_ENV
         value: production
       - key: RESEND_API_KEY
@@ -124,7 +124,7 @@ services:
     startCommand: npm run stock:reconcile
     envVars:
       - key: DATABASE_URL
-        value: postgresql://postgres:U0kJOCYez4WnIoDw@db.txlcfxfuiphwicpduccc.supabase.co:5432/postgres?sslmode=require
+        value: postgresql://postgres.txlcfxfuiphwicpduccc:U0kJOCYez4WnIoDw@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require
       - key: NODE_ENV
         value: production
       - key: RESEND_API_KEY
