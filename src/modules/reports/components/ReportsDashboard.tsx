@@ -15,21 +15,23 @@ const COND_COLOR: Record<string,string> = { new:"#1D9E75", good:"#378ADD", fair:
 const STATUS_AR: Record<string,string> = { draft:"مسودة", submitted:"مقدم", approved:"معتمد", active:"نشط", completed:"مكتمل", rejected:"مرفوض" };
 const STATUS_COLOR: Record<string,string> = { approved:"#1D9E75", active:"#1D9E75", submitted:"#EF9F27", draft:"#4B5563", completed:"#378ADD", rejected:"#E24B4A" };
 
-function BarChart({ data, maxVal, colorFn, labelKey, valueKey }: { data:any[]; maxVal:number; colorFn:(d:any)=>string; labelKey:string; valueKey:string }) {
+function BarChart({ data, maxVal, colorFn, labelKey, valueKey, locale }: { data:any[]; maxVal:number; colorFn:(d:any)=>string; labelKey:string; valueKey:string; locale: AppLocale }) {
   return (
     <div className="space-y-2">
       {data.map((d,i) => (
         <div key={i} className="flex items-center gap-3">
-          <span className="text-[11px] text-[#6B7280] w-24 text-left truncate shrink-0">{d[labelKey]}</span>
+          <span className={`text-[11px] text-[#6B7280] w-24 truncate shrink-0 ${locale === "ar" ? "text-right" : "text-left"}`}>{d[labelKey]}</span>
           <div className="flex-1 h-2 bg-[#1F2937] rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width:`${(d[valueKey]/maxVal*100).toFixed(1)}%`, background:colorFn(d) }} />
           </div>
-          <span className="text-[11px] font-semibold tabular-nums text-[#9CA3AF] w-16 text-left">{fmt(d[valueKey])}</span>
+          <span className={`text-[11px] font-semibold tabular-nums text-[#9CA3AF] w-16 ${locale === "ar" ? "text-right" : "text-left"}`}>{n_fmt(d[valueKey], locale)}</span>
         </div>
       ))}
     </div>
   );
 }
+
+const n_fmt = (n:number, locale: AppLocale) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(0)}K` : n.toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
 
 export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors, monthlyPayroll, assetHealth, budgetSummary, locale = "ar" }: {
   monthlyPR:MonthlyData[]; grantsByStatus:GrantStatus[]; topVendors:VendorTop[];
@@ -43,13 +45,15 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
   const spendPct   = budgetSummary.planned > 0 ? (budgetSummary.spent/budgetSummary.planned*100) : 0;
   const remaining  = budgetSummary.planned - budgetSummary.spent - budgetSummary.committed;
 
-  const fmt = (n:number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(0)}K` : n.toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
   const condLabel = locale === "ar"
     ? { new:"جديد", good:"جيد", fair:"مقبول", poor:"سيئ", disposed:"مستهلك" }
     : { new:"New", good:"Good", fair:"Fair", poor:"Poor", disposed:"Disposed" };
   const statusLabel = locale === "ar"
     ? { draft:"مسودة", submitted:"مقدم", approved:"معتمد", active:"نشط", completed:"مكتمل", rejected:"مرفوض" }
     : { draft:"Draft", submitted:"Submitted", approved:"Approved", active:"Active", completed:"Completed", rejected:"Rejected" };
+  const t = locale === "ar"
+    ? { orders: "أمر", assetsTotal: "أصل إجمالاً" }
+    : { orders: "orders", assetsTotal: "assets total" };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -84,7 +88,7 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
             { label:locale === "ar" ? "المتبقي" : "Remaining",        value:remaining,               color:remaining<0?"text-[#E24B4A]":"text-[#D1D5DB]" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-[#161B26] rounded-xl p-3 text-center">
-              <p className={`text-xl font-bold tabular-nums ${color}`}>{fmt(value)}</p>
+              <p className={`text-xl font-bold tabular-nums ${color}`}>{n_fmt(value, locale)}</p>
               <p className="text-[10px] text-[#4B5563] mt-1">{label} — USD</p>
             </div>
           ))}
@@ -114,7 +118,7 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
           </h2>
           {monthlyPR.length === 0
             ? <p className="text-sm text-[#4B5563] text-center py-8">{locale === "ar" ? "لا توجد بيانات" : "No data"}</p>
-            : <BarChart data={monthlyPR} maxVal={maxPR} labelKey="label" valueKey="total" colorFn={()=>"#EF9F27"} />
+            : <BarChart data={monthlyPR} maxVal={maxPR} labelKey="label" valueKey="total" colorFn={()=>"#EF9F27"} locale={locale} />
           }
         </div>
 
@@ -125,7 +129,7 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
           </h2>
           {monthlyPayroll.length === 0
             ? <p className="text-sm text-[#4B5563] text-center py-8">{locale === "ar" ? "لا توجد بيانات" : "No data"}</p>
-            : <BarChart data={monthlyPayroll} maxVal={maxPayroll} labelKey="label" valueKey="totalNet" colorFn={()=>"#378ADD"} />
+            : <BarChart data={monthlyPayroll} maxVal={maxPayroll} labelKey="label" valueKey="totalNet" colorFn={()=>"#378ADD"} locale={locale} />
           }
         </div>
       </div>
@@ -148,7 +152,7 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
                   </div>
                   <div className="text-left">
                     <span className="text-sm font-semibold tabular-nums text-white">{g.count}</span>
-                    <span className="text-[10px] text-[#4B5563] mr-1.5">{fmt(g.total)} USD</span>
+                    <span className="text-[10px] text-[#4B5563] mr-1.5">{n_fmt(g.total, locale)} USD</span>
                   </div>
                 </div>
               );
@@ -172,8 +176,8 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
                     </span>
                     <span className="text-xs text-[#D1D5DB] flex-1 truncate">{v.name}</span>
                     <div className="text-left">
-                      <p className="text-xs font-semibold text-[#A855F7]">{fmt(v.totalValue)}</p>
-                      <p className="text-[10px] text-[#4B5563]">{v.poCount} {locale === "ar" ? "أمر" : "orders"}</p>
+                      <p className="text-xs font-semibold text-[#A855F7]">{n_fmt(v.totalValue, locale)}</p>
+                      <p className="text-[10px] text-[#4B5563]">{v.poCount} {t.orders}</p>
                     </div>
                   </div>
                 ))}
@@ -205,7 +209,7 @@ export default function ReportsDashboard({ monthlyPR, grantsByStatus, topVendors
                   );
                 })}
                 <div className="pt-2 border-t border-[#1F2937] text-center">
-                  <p className="text-xs text-[#4B5563]">{totalAssets} {locale === "ar" ? "أصل إجمالاً" : "assets total"}</p>
+                  <p className="text-xs text-[#4B5563]">{totalAssets} {t.assetsTotal}</p>
                 </div>
               </div>
           }

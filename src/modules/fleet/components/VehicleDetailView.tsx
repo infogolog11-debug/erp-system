@@ -284,6 +284,11 @@ function MaintenanceTab({ vehicle, userId, organizationId, locale = "ar" }: any)
     headers:["Date","Type","Cost","Description"], empty:"No maintenance records",
   };
 
+  const maintenanceTypeLabel: Record<AppLocale, Record<string,string>> = {
+    ar: { routine_service:"صيانة دورية", repair:"إصلاح", tire_change:"تغيير إطارات", inspection:"فحص", other:"أخرى" },
+    en: { routine_service:"Routine service", repair:"Repair", tire_change:"Tire change", inspection:"Inspection", other:"Other" },
+  };
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
@@ -328,7 +333,7 @@ function MaintenanceTab({ vehicle, userId, organizationId, locale = "ar" }: any)
             {vehicle.maintenanceRecords.map((m:any) => (
               <tr key={m.id} className="border-b border-[#1F2937] last:border-none hover:bg-[#161B26]">
                 <td className="px-4 py-3 text-[#9CA3AF] text-[13px]">{new Date(m.maintenanceDate).toLocaleDateString(dateTag)}</td>
-                <td className="px-4 py-3 text-[#D1D5DB] text-[13px]">{m.maintenanceType}</td>
+                <td className="px-4 py-3 text-[#D1D5DB] text-[13px]">{maintenanceTypeLabel[locale as AppLocale][m.maintenanceType] || m.maintenanceType}</td>
                 <td className="px-4 py-3 text-[#D1D5DB] text-[13px] tabular-nums">{m.cost}</td>
                 <td className="px-4 py-3 text-[#9CA3AF] text-[13px]">{m.description ?? "—"}</td>
               </tr>

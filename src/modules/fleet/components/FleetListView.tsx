@@ -50,7 +50,7 @@ export default function FleetListView({ vehicles, drivers, organizationId, userI
     saveVehicle:"حفظ المركبة", driverNamePlaceholder:"اسم السائق", licensePlaceholder:"رقم الرخصة",
     licenseExpiryPlaceholder:"تاريخ انتهاء الرخصة", phonePlaceholder:"الهاتف", saveDriver:"حفظ السائق",
     headers:["الكود","اللوحة","النوع","السائق","العداد","الحالة"],
-    km:(n:string)=>`${n} كم`,
+    km:(n:string)=>locale === "ar" ? `${n} كم` : `${n} km`,
     empty:"لا توجد مركبات مسجّلة",
   } : {
     alertsTitle:"Alerts requiring follow-up",

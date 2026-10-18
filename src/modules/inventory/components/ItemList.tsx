@@ -12,12 +12,12 @@ export default function ItemList({ items, locale = "ar" }: { items: ItemDisplay[
     </div>
   );
   return (
-    <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
+    <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden" dir={locale === "ar" ? "rtl" : "ltr"}>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1F2937]">
             {(locale === "ar" ? ["الكود","الصنف","الفئة","الوحدة","الرصيد الحالي","الحد الأدنى","الحالة"] : ["Code","Item","Category","Unit","Current stock","Min stock","Status"]).map(h=>(
-              <th key={h} className="text-right text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
+              <th key={h} className="text-start text-xs font-medium text-[#6B7280] px-4 py-3">{h}</th>
             ))}
           </tr>
         </thead>

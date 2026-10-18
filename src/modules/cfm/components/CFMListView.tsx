@@ -5,12 +5,12 @@ import type { AppLocale } from "@/lib/preferences";
 
 const CATEGORY_LABEL: Record<AppLocale, Record<string,string>> = {
   ar: {
-    service_quality:"جودة الخدمة", staff_conduct:"سلوك الموظفين", corruption_fraud:"فساد/احتيال",
+    service_quality:"جودة الخدمة", staff_conduct:"سلوك الوكلاء", corruption_fraud:"فساد/احتيال",
     sgbv_protection:"حماية/عنف قائم على النوع", distribution_issue:"مشكلة توزيع",
     eligibility_targeting:"استهداف/أهلية", data_privacy:"خصوصية البيانات", suggestion:"اقتراح", other:"أخرى",
   },
   en: {
-    service_quality:"Service quality", staff_conduct:"Staff conduct", corruption_fraud:"Corruption / fraud",
+    service_quality:"Service quality", staff_conduct:"Agent conduct", corruption_fraud:"Corruption / fraud",
     sgbv_protection:"Protection / GBV", distribution_issue:"Distribution issue",
     eligibility_targeting:"Eligibility / targeting", data_privacy:"Data privacy", suggestion:"Suggestion", other:"Other",
   },

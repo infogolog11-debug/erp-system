@@ -73,11 +73,11 @@ export default function VendorForm({ currencies, organizationId, userId, locale 
       <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-5 space-y-4">
         <h2 className="text-sm font-semibold text-white pb-3 border-b border-[#1F2937]">{copy.basicInfo}</h2>
         <div className="grid grid-cols-2 gap-4">
-          <F label={copy.vendorName} required><input value={form.name} onChange={e=>upd("name",e.target.value)} className={inputCls} placeholder="Vendor Name" required /></F>
-          <F label={copy.vendorNameAr}><input value={form.nameAr} onChange={e=>upd("nameAr",e.target.value)} className={inputCls} placeholder={locale === "ar" ? "اسم المورد بالعربية" : "Vendor name in Arabic"} /></F>
+          <F label={copy.vendorName} required><input value={form.name} onChange={e=>upd("name",e.target.value)} className={inputCls} placeholder={locale === "ar" ? "اسم المورد" : "Vendor name"} required /></F>
+          <F label={copy.vendorNameAr}><input value={form.nameAr} onChange={e=>upd("nameAr",e.target.value)} className={inputCls} placeholder={locale === "ar" ? "الاسم بالعربية" : "Name in Arabic"} /></F>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <F label={copy.code} required><input value={form.code} onChange={e=>upd("code",e.target.value)} className={inputCls} placeholder="VND-001" required dir="ltr" /></F>
+          <F label={copy.code} required><input value={form.code} onChange={e=>upd("code",e.target.value)} className={inputCls} placeholder={locale === "ar" ? "مثال: VND-001" : "e.g. VND-001"} required dir="ltr" /></F>
           <F label={copy.vendorType} required>
             <select value={form.vendorType} onChange={e=>upd("vendorType",e.target.value)} className={inputCls+" cursor-pointer"} required>
               {VENDOR_TYPES[locale].map(t => <option key={t.v} value={t.v}>{t.l}</option>)}

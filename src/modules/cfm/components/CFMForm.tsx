@@ -20,13 +20,13 @@ const CHANNEL_OPTIONS: Record<AppLocale, {value:string;label:string}[]> = {
 };
 const CATEGORY_OPTIONS: Record<AppLocale, {value:string;label:string}[]> = {
   ar: [
-    {value:"service_quality",label:"جودة الخدمة"},{value:"staff_conduct",label:"سلوك الموظفين"},
+    {value:"service_quality",label:"جودة الخدمة"},{value:"staff_conduct",label:"سلوك الوكلاء"},
     {value:"corruption_fraud",label:"فساد/احتيال"},{value:"sgbv_protection",label:"حماية/عنف قائم على النوع"},
     {value:"distribution_issue",label:"مشكلة توزيع"},{value:"eligibility_targeting",label:"استهداف/أهلية"},
     {value:"data_privacy",label:"خصوصية البيانات"},{value:"suggestion",label:"اقتراح"},{value:"other",label:"أخرى"},
   ],
   en: [
-    {value:"service_quality",label:"Service quality"},{value:"staff_conduct",label:"Staff conduct"},
+    {value:"service_quality",label:"Service quality"},{value:"staff_conduct",label:"Agent conduct"},
     {value:"corruption_fraud",label:"Corruption / fraud"},{value:"sgbv_protection",label:"Protection / GBV"},
     {value:"distribution_issue",label:"Distribution issue"},{value:"eligibility_targeting",label:"Eligibility / targeting"},
     {value:"data_privacy",label:"Data privacy"},{value:"suggestion",label:"Suggestion"},{value:"other",label:"Other"},
