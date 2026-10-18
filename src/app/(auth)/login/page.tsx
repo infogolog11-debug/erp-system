@@ -18,17 +18,13 @@ export default function LoginPage() {
       const res = await signIn("credentials", {
         email,
         password,
-        redirect: false,
         callbackUrl: "/",
       });
 
+      // عند النجاح ستتولى NextAuth إعادة التوجيه مباشرة.
       if (res?.error) {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
-        return;
       }
-
-      // نستخدم انتقالاً كاملاً حتى تلتقط طبقة الحماية الكوكي الجديدة فوراً.
-      window.location.href = res?.url ?? "/";
     } catch {
       setError("تعذر تسجيل الدخول حالياً، حاول مرة أخرى");
     } finally {
