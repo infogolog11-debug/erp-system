@@ -1,11 +1,12 @@
 // src/app/(dashboard)/inventory/page.tsx
 import { auth } from "@/auth";
-import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getUserPermission, canView, canEdit } from "@/lib/permissions/service";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { items, assets, warehouses } from "@/db/schema";
 import { eq, and, count, lt } from "drizzle-orm";
 import ItemList       from "@/modules/inventory/components/ItemList";
+import DepreciationRunButton from "@/modules/inventory/components/DepreciationRunButton";
 import InventoryHeader from "@/modules/inventory/components/InventoryHeader";
 import InventoryStats  from "@/modules/inventory/components/InventoryStats";
 import PaginationBar from "@/components/shared/PaginationBar";
@@ -23,6 +24,7 @@ export default async function InventoryPage({ searchParams: searchParamsPromise 
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "inventory", session.user.role);
   if (!canView(__perm)) redirect("/");
+  const permEdit = canEdit(__perm);
   const tab     = searchParams.tab ?? "items";
 
   // إصلاح (v34-تتمة-3، بند مفتوح موثّق بـSECURITY_NOTES.md § v32): كانت
@@ -66,7 +68,14 @@ export default async function InventoryPage({ searchParams: searchParamsPromise 
     <div className="space-y-5 max-w-7xl mx-auto">
       <InventoryHeader role={session.user.role} tab={tab} locale={prefs.locale} />
       <InventoryStats totalItems={itemsTotal} totalAssets={assetsTotal} lowStock={lowStockCount[0].c} warehouses={warehouseCount[0].c} locale={prefs.locale} />
-      {tab === "assets" ? <AssetList assets={allAssets} locale={prefs.locale} localeTag={localeTag} /> : <ItemList items={allItems} locale={prefs.locale} />}
+      {tab === "assets" ? (
+        <div className="space-y-4">
+          {permEdit && (
+            <DepreciationRunButton organizationId={orgId} userId={session.user.id} locale={prefs.locale} />
+          )}
+          <AssetList assets={allAssets} locale={prefs.locale} localeTag={localeTag} />
+        </div>
+      ) : <ItemList items={allItems} locale={prefs.locale} />}
       <PaginationBar
         basePath="/inventory" currentPage={page} hasNextPage={hasNextPage}
         totalCount={tab === "assets" ? assetsTotal : itemsTotal} pageSize={limit}

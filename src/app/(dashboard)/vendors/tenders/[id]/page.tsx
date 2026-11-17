@@ -1,10 +1,11 @@
 import { auth }     from "@/auth";
-import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getUserPermission, canView, canEdit } from "@/lib/permissions/service";
 import { db }       from "@/db";
 import { tenders, tenderBids, bidEvaluationCriteria } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import BidEvaluationPanel from "@/modules/vendors/components/BidEvaluationPanel";
+import BidCriteriaEditor from "@/modules/vendors/components/BidCriteriaEditor";
 import ChatterBox    from "@/components/shared/ChatterBox";
 import { getRequestPreferences } from "@/lib/preferences";
 import type { AppLocale } from "@/lib/preferences";
@@ -17,6 +18,7 @@ export default async function TenderDetailPage({ params: paramsPromise }: { para
   const role   = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "vendors", session.user.role);
   if (!canView(__perm)) redirect("/");
+  const permEdit = canEdit(__perm);
   const userId  = session.user.id;
   const prefs = await getRequestPreferences();
 
@@ -102,29 +104,46 @@ export default async function TenderDetailPage({ params: paramsPromise }: { para
 
         {/* ملخص جانبي */}
         <div className="space-y-5">
-          <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <i className="ti ti-scale text-[#0F6E56]" />{prefs.locale === "ar" ? "معايير التقييم" : "Evaluation criteria"}
-            </h2>
-            {criteria.length === 0 ? (
-              <p className="text-xs text-[#4B5563]">{prefs.locale === "ar" ? "لا توجد معايير — يرجى الإعداد أولاً" : "No criteria — please configure them first"}</p>
-            ) : (
-              criteria.map(c => (
-                <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-[#1F2937] last:border-0">
-                  <span className="text-xs text-[#9CA3AF]">{c.criteriaNameAr ?? c.criteriaName}</span>
-                  <span className="text-xs font-bold text-[#EF9F27]">{c.weight}%</span>
+          {permEdit ? (
+            <BidCriteriaEditor
+              tenderId={tender.id}
+              organizationId={orgId}
+              userId={userId}
+              initial={criteria.map(c => ({
+                id:             c.id,
+                criteriaNameAr: c.criteriaNameAr ?? c.criteriaName,
+                criteriaName:   c.criteriaName,
+                weight:         c.weight,
+                maxScore:       c.maxScore ?? 10,
+              }))}
+              canEdit={permEdit}
+              locale={prefs.locale}
+            />
+          ) : (
+            <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl p-5 space-y-3">
+              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                <i className="ti ti-scale text-[#0F6E56]" />{prefs.locale === "ar" ? "معايير التقييم" : "Evaluation criteria"}
+              </h2>
+              {criteria.length === 0 ? (
+                <p className="text-xs text-[#4B5563]">{prefs.locale === "ar" ? "لا توجد معايير — يرجى الإعداد أولاً" : "No criteria — please configure them first"}</p>
+              ) : (
+                criteria.map(c => (
+                  <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-[#1F2937] last:border-0">
+                    <span className="text-xs text-[#9CA3AF]">{c.criteriaNameAr ?? c.criteriaName}</span>
+                    <span className="text-xs font-bold text-[#EF9F27]">{c.weight}%</span>
+                  </div>
+                ))
+              )}
+              {criteria.length > 0 && (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-[#4B5563]">{prefs.locale === "ar" ? "المجموع" : "Total"}</span>
+                  <span className={`text-xs font-bold ${criteria.reduce((s,c)=>s+c.weight,0)===100?"text-[#1D9E75]":"text-[#E24B4A]"}`}>
+                    {criteria.reduce((s,c)=>s+c.weight,0)}%
+                  </span>
                 </div>
-              ))
-            )}
-            {criteria.length > 0 && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-xs text-[#4B5563]">{prefs.locale === "ar" ? "المجموع" : "Total"}</span>
-                <span className={`text-xs font-bold ${criteria.reduce((s,c)=>s+c.weight,0)===100?"text-[#1D9E75]":"text-[#E24B4A]"}`}>
-                  {criteria.reduce((s,c)=>s+c.weight,0)}%
-                </span>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

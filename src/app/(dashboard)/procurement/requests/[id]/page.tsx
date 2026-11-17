@@ -1,8 +1,8 @@
 // صفحة تفاصيل طلب الشراء — مع مصفوفة التواقيع + الطوارئ + تحذير الميزانية
 import { auth }     from "@/auth";
-import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getUserPermission, canView, canEdit, canApprove } from "@/lib/permissions/service";
 import { db }       from "@/db";
-import { purchaseRequests, purchaseRequestItems, grantBudgetLines, attachments } from "@/db/schema";
+import { purchaseRequests, purchaseRequestItems, grantBudgetLines, attachments, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import StatusBar     from "@/components/shared/StatusBar";
@@ -10,6 +10,7 @@ import ChatterBox    from "@/components/shared/ChatterBox";
 import ApprovalPanel from "@/modules/approvals/components/ApprovalPanel";
 import BudgetWarningBar from "@/modules/grants/components/BudgetWarningBar";
 import { EmergencyBadge, EmergencyToggle } from "@/modules/procurement/components/EmergencyBadge";
+import PRActions from "@/modules/procurement/components/PRActions";
 import { getRequiredApprovers, getApprovalStatus } from "@/lib/approval/matrix";
 import ExportButton from "@/components/shared/ExportButton";
 import AttachmentsPanel from "@/components/shared/AttachmentsPanel";
@@ -29,6 +30,17 @@ export default async function PRDetailPage({ params: paramsPromise }: { params: 
   const role    = session.user.role;
   const __perm = await getUserPermission(session.user.id, orgId, "procurement", role);
   if (!canView(__perm)) redirect("/");
+  const permEdit    = canEdit(__perm);
+  const permApprove = canApprove(__perm);
+
+  // المعتمدون المحتملون (لإشعارهم عند الإرسال للموافقة) — كل من يملك صلاحية
+  // "اعتماد" على وحدة المشتريات في نفس المنظمة.
+  const orgUsers = await db.query.users.findMany({ where: eq(users.organizationId, orgId) });
+  const approverIds: string[] = [];
+  for (const u of orgUsers) {
+    const p = await getUserPermission(u.id, orgId, "procurement", u.role);
+    if (canApprove(p)) approverIds.push(u.id);
+  }
 
   const prAttachments = await db.query.attachments.findMany({ where: and(eq(attachments.tableName,"purchase_requests"), eq(attachments.recordId, params.id)) });
 
@@ -124,6 +136,16 @@ export default async function PRDetailPage({ params: paramsPromise }: { params: 
           {pr.justification && <p className="text-sm text-[#6B7280] mt-1">{pr.justification}</p>}
         </div>
         <div className="flex items-center gap-3">
+          <PRActions
+            prId={pr.id}
+            organizationId={orgId}
+            userId={userId}
+            status={pr.status}
+            approverIds={approverIds}
+            canEdit={permEdit}
+            canApprove={permApprove}
+            locale={prefs.locale}
+          />
           <ExportButton
             apiPath={`/api/export/pr/${pr.id}`}
             filename={`PR-${pr.code}`}
