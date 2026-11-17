@@ -27,32 +27,40 @@ const CATEGORIES = [
   { key:"notifications", labelAr:"الإشعارات",        icon:"ti-bell",              color:"text-[#E24B4A]"  },
 ];
 
-// تعريف الإعدادات مع labels العربية وأوصافها
-const SETTING_META: Record<string, { labelAr: string; desc: string; valueType: string; unit?: string; min?: number; max?: number; options?: string[] }> = {
-  income_tax_rate:              { labelAr:"نسبة ضريبة الدخل",              desc:"تُطبَّق على الراتب فوق حد الإعفاء",     valueType:"number", unit:"%",    min:0,  max:50  },
-  social_security_rate:         { labelAr:"نسبة الضمان الاجتماعي",         desc:"تُخصم من إجمالي الراتب الشهري",       valueType:"number", unit:"%",    min:0,  max:30  },
-  overtime_multiplier:          { labelAr:"معامل الأوفرتايم",               desc:"عامل الضرب لكل ساعة إضافية",          valueType:"number", unit:"×",    min:1,  max:3   },
-  working_days_per_month:       { labelAr:"أيام العمل في الشهر",           desc:"يُستخدم لحساب اليومية",                valueType:"number", unit:"يوم",  min:18, max:26  },
-  tax_exempt_threshold:         { labelAr:"حد الإعفاء الضريبي",            desc:"المبلغ المعفى من الضريبة شهرياً",      valueType:"number", unit:"USD",  min:0,  max:5000},
-  weekend_days:                 { labelAr:"أيام العطلة (0=أحد..6=سبت)",   desc:"أرقام مفصولة بفاصلة",                  valueType:"string"                         },
-  warning_threshold:            { labelAr:"نسبة تحذير الميزانية",          desc:"إشعار عند بلوغ هذه النسبة",            valueType:"number", unit:"%",    min:50, max:95  },
-  critical_threshold:           { labelAr:"نسبة الخطر الحرج",              desc:"تحذير أشد عند هذه النسبة",             valueType:"number", unit:"%",    min:80, max:99  },
-  block_threshold:              { labelAr:"نسبة الحجب",                    desc:"حجب الطلبات الجديدة بعد هذه النسبة",   valueType:"number", unit:"%",    min:95, max:110 },
-  notify_cooldown_hours:        { labelAr:"فترة التهدئة بين الإشعارات",    desc:"لا يُعاد الإشعار قبل انقضاء هذه المدة",valueType:"number", unit:"ساعة", min:1,  max:168 },
-  matching_tolerance_pct:       { labelAr:"هامش تسامح المطابقة الثلاثية", desc:"نسبة الاختلاف المقبولة في الكميات/الأسعار",valueType:"number",unit:"%",  min:0,  max:10  },
-  emergency_review_days:        { labelAr:"مدة مراجعة الطوارئ",            desc:"أيام مراجعة طلب الطوارئ بعد الاعتماد", valueType:"number", unit:"يوم",  min:7,  max:90  },
-  approval_sla_hours:           { labelAr:"مهلة الموافقة الافتراضية",      desc:"ساعات قبل التصعيد التلقائي",           valueType:"number", unit:"ساعة", min:4,  max:240 },
-  rfq_min_vendors:              { labelAr:"الحد الأدنى لموردي RFQ",        desc:"عدد الموردين المطلوب في كل طلب عروض",  valueType:"number", unit:"مورد", min:1,  max:10  },
-  default_depreciation_method:  { labelAr:"طريقة الاستهلاك الافتراضية",   desc:"تُطبَّق على الأصول الجديدة",            valueType:"string", options:["straight_line","declining_balance"] },
-  it_depreciation_rate:         { labelAr:"معدل استهلاك أجهزة IT",         desc:"نسبة الاستهلاك السنوية",               valueType:"number", unit:"%",    min:5,  max:50  },
-  vehicle_depreciation_rate:    { labelAr:"معدل استهلاك المركبات",         desc:"نسبة الاستهلاك السنوية",               valueType:"number", unit:"%",    min:5,  max:40  },
-  furniture_depreciation_rate:  { labelAr:"معدل استهلاك الأثاث",           desc:"نسبة الاستهلاك السنوية",               valueType:"number", unit:"%",    min:5,  max:30  },
-  payroll_notify_day:           { labelAr:"يوم تذكير الرواتب",             desc:"يوم الشهر لإرسال تذكير معالجة الرواتب", valueType:"number", unit:"يوم",  min:1,  max:28  },
-  budget_alert_emails:          { labelAr:"إيميلات تنبيه الميزانية",       desc:"إيميلات مفصولة بفاصلة",                valueType:"string"                         },
-  approval_reminder_hours:      { labelAr:"تذكير الموافقة المعلقة",        desc:"إرسال تذكير للموافق بعد هذه الساعات",  valueType:"number", unit:"ساعة", min:1,  max:72  },
-  annual_leave_days:            { labelAr:"أيام الإجازة السنوية",          desc:"عدد الأيام السنوية المستحقة",           valueType:"number", unit:"يوم",  min:14, max:60  },
-  sick_leave_days:              { labelAr:"أيام الإجازة المرضية",          desc:"الحد الأقصى السنوي للإجازات المرضية",   valueType:"number", unit:"يوم",  min:7,  max:30  },
-  probation_months:             { labelAr:"مدة الاختبار",                  desc:"شهور فترة الاختبار للموظف الجديد",      valueType:"number", unit:"شهر",  min:1,  max:6   },
+// تعريف الإعدادات مع labels وأوصافها بالعربية والإنجليزية
+type SettingMeta = {
+  labelAr: string; labelEn: string;
+  descAr:  string; descEn:  string;
+  valueType: string;
+  unit?: string; unitEn?: string;
+  min?: number; max?: number; options?: string[];
+};
+
+const SETTING_META: Record<string, SettingMeta> = {
+  income_tax_rate:              { labelAr:"نسبة ضريبة الدخل",              labelEn:"Income tax rate",              descAr:"تُطبَّق على الراتب فوق حد الإعفاء",     descEn:"Applied to salary above the exemption threshold", valueType:"number", unit:"%",    min:0,  max:50  },
+  social_security_rate:         { labelAr:"نسبة الضمان الاجتماعي",         labelEn:"Social security rate",         descAr:"تُخصم من إجمالي الراتب الشهري",       descEn:"Deducted from total monthly salary",              valueType:"number", unit:"%",    min:0,  max:30  },
+  overtime_multiplier:          { labelAr:"معامل الأوفرتايم",               labelEn:"Overtime multiplier",          descAr:"عامل الضرب لكل ساعة إضافية",          descEn:"Multiplier per extra hour",                       valueType:"number", unit:"×",    min:1,  max:3   },
+  working_days_per_month:       { labelAr:"أيام العمل في الشهر",           labelEn:"Working days per month",       descAr:"يُستخدم لحساب اليومية",                descEn:"Used to compute the daily rate",                  valueType:"number", unit:"يوم",  unitEn:"day",  min:18, max:26  },
+  tax_exempt_threshold:         { labelAr:"حد الإعفاء الضريبي",            labelEn:"Tax exemption threshold",      descAr:"المبلغ المعفى من الضريبة شهرياً",      descEn:"Amount exempt from tax monthly",                  valueType:"number", unit:"USD",  min:0,  max:5000},
+  weekend_days:                 { labelAr:"أيام العطلة (0=أحد..6=سبت)",   labelEn:"Weekend days (0=Sun..6=Sat)",  descAr:"أرقام مفصولة بفاصلة",                  descEn:"Comma-separated numbers",                         valueType:"string"                         },
+  warning_threshold:            { labelAr:"نسبة تحذير الميزانية",          labelEn:"Budget warning ratio",         descAr:"إشعار عند بلوغ هذه النسبة",            descEn:"Alert when this ratio is reached",                valueType:"number", unit:"%",    min:50, max:95  },
+  critical_threshold:           { labelAr:"نسبة الخطر الحرج",              labelEn:"Critical risk ratio",          descAr:"تحذير أشد عند هذه النسبة",             descEn:"Stronger warning at this ratio",                  valueType:"number", unit:"%",    min:80, max:99  },
+  block_threshold:              { labelAr:"نسبة الحجب",                    labelEn:"Blocking ratio",               descAr:"حجب الطلبات الجديدة بعد هذه النسبة",   descEn:"Block new requests beyond this ratio",            valueType:"number", unit:"%",    min:95, max:110 },
+  notify_cooldown_hours:        { labelAr:"فترة التهدئة بين الإشعارات",    labelEn:"Notification cooldown",        descAr:"لا يُعاد الإشعار قبل انقضاء هذه المدة",descEn:"No repeat notification before this period",       valueType:"number", unit:"ساعة", unitEn:"hr",   min:1,  max:168 },
+  matching_tolerance_pct:       { labelAr:"هامش تسامح المطابقة الثلاثية", labelEn:"Three-way match tolerance",    descAr:"نسبة الاختلاف المقبولة في الكميات/الأسعار",descEn:"Accepted variance in quantities/prices",      valueType:"number", unit:"%",  min:0,  max:10  },
+  emergency_review_days:        { labelAr:"مدة مراجعة الطوارئ",            labelEn:"Emergency review period",      descAr:"أيام مراجعة طلب الطوارئ بعد الاعتماد", descEn:"Days to review an emergency request after approval", valueType:"number", unit:"يوم", unitEn:"day",  min:7,  max:90  },
+  approval_sla_hours:           { labelAr:"مهلة الموافقة الافتراضية",      labelEn:"Default approval SLA",         descAr:"ساعات قبل التصعيد التلقائي",           descEn:"Hours before automatic escalation",               valueType:"number", unit:"ساعة", unitEn:"hr",   min:4,  max:240 },
+  rfq_min_vendors:              { labelAr:"الحد الأدنى لموردي RFQ",        labelEn:"Minimum RFQ vendors",          descAr:"عدد الموردين المطلوب في كل طلب عروض",  descEn:"Vendors required per RFQ",                        valueType:"number", unit:"مورد", unitEn:"vendor", min:1,  max:10  },
+  default_depreciation_method:  { labelAr:"طريقة الاستهلاك الافتراضية",   labelEn:"Default depreciation method",  descAr:"تُطبَّق على الأصول الجديدة",            descEn:"Applied to new assets",                           valueType:"string", options:["straight_line","declining_balance"] },
+  it_depreciation_rate:         { labelAr:"معدل استهلاك أجهزة IT",         labelEn:"IT depreciation rate",         descAr:"نسبة الاستهلاك السنوية",               descEn:"Annual depreciation rate",                        valueType:"number", unit:"%",    min:5,  max:50  },
+  vehicle_depreciation_rate:    { labelAr:"معدل استهلاك المركبات",         labelEn:"Vehicle depreciation rate",    descAr:"نسبة الاستهلاك السنوية",               descEn:"Annual depreciation rate",                        valueType:"number", unit:"%",    min:5,  max:40  },
+  furniture_depreciation_rate:  { labelAr:"معدل استهلاك الأثاث",           labelEn:"Furniture depreciation rate",  descAr:"نسبة الاستهلاك السنوية",               descEn:"Annual depreciation rate",                        valueType:"number", unit:"%",    min:5,  max:30  },
+  payroll_notify_day:           { labelAr:"يوم تذكير الرواتب",             labelEn:"Payroll reminder day",         descAr:"يوم الشهر لإرسال تذكير معالجة الرواتب", descEn:"Day of month to send the payroll processing reminder", valueType:"number", unit:"يوم", unitEn:"day",  min:1,  max:28  },
+  budget_alert_emails:          { labelAr:"إيميلات تنبيه الميزانية",       labelEn:"Budget alert emails",          descAr:"إيميلات مفصولة بفاصلة",                descEn:"Comma-separated emails",                          valueType:"string"                         },
+  approval_reminder_hours:      { labelAr:"تذكير الموافقة المعلقة",        labelEn:"Pending approval reminder",    descAr:"إرسال تذكير للموافق بعد هذه الساعات",  descEn:"Send a reminder to the approver after these hours", valueType:"number", unit:"ساعة", unitEn:"hr",   min:1,  max:72  },
+  annual_leave_days:            { labelAr:"أيام الإجازة السنوية",          labelEn:"Annual leave days",            descAr:"عدد الأيام السنوية المستحقة",           descEn:"Annual entitlement days",                         valueType:"number", unit:"يوم", unitEn:"day",  min:14, max:60  },
+  sick_leave_days:              { labelAr:"أيام الإجازة المرضية",          labelEn:"Sick leave days",              descAr:"الحد الأقصى السنوي للإجازات المرضية",   descEn:"Annual maximum for sick leave",                   valueType:"number", unit:"يوم", unitEn:"day",  min:7,  max:30  },
+  probation_months:             { labelAr:"مدة الاختبار",                  labelEn:"Probation period",             descAr:"شهور فترة الاختبار للموظف الجديد",      descEn:"Probation months for a new employee",             valueType:"number", unit:"شهر", unitEn:"month", min:1,  max:6   },
 };
 
 export default function SettingsPanel({ organizationId, settings, locale = "ar" }: Props) {
@@ -178,8 +186,8 @@ export default function SettingsPanel({ organizationId, settings, locale = "ar" 
               <div key={key} className={`flex items-center gap-5 px-6 py-4 transition-colors ${isDirty ? "bg-[#0D0A00]" : "hover:bg-[#161B26]"}`}>
                 {/* Label */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#D1D5DB]">{locale === "ar" ? meta.labelAr : meta.labelAr}</p>
-                  <p className="text-xs text-[#4B5563] mt-0.5">{locale === "ar" ? meta.desc : meta.desc}</p>
+                  <p className="text-sm font-medium text-[#D1D5DB]">{locale === "ar" ? meta.labelAr : meta.labelEn}</p>
+                  <p className="text-xs text-[#4B5563] mt-0.5">{locale === "ar" ? meta.descAr : meta.descEn}</p>
                 </div>
 
                 {/* Input */}
@@ -208,7 +216,7 @@ export default function SettingsPanel({ organizationId, settings, locale = "ar" 
                         onChange={e => handleChange(key, e.target.value)}
                         className="w-24 bg-[#161B26] border border-[#2D3748] text-white text-sm text-center rounded-lg px-2 py-2 focus:outline-none focus:border-[#0F6E56] tabular-nums"
                       />
-                      {meta.unit && <span className="text-xs text-[#4B5563] min-w-[28px]">{meta.unit}</span>}
+                      {meta.unit && <span className="text-xs text-[#4B5563] min-w-[28px]">{locale === "ar" ? meta.unit : (meta.unitEn ?? meta.unit)}</span>}
                     </div>
                   ) : (
                     <input

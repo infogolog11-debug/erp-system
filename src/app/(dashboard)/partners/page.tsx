@@ -13,8 +13,8 @@ export default async function PartnersPage({ searchParams: searchParamsPromise }
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const orgId = session.user.organizationId;
   const prefs = await getRequestPreferences();
+  const orgId = session.user.organizationId;
   const perm = await getUserPermission(session.user.id, orgId, "partners", session.user.role);
   if (!canView(perm)) redirect("/");
 
