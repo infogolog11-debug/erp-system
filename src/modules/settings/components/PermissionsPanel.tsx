@@ -10,12 +10,14 @@ type ExistingPerm = { userId:string; moduleCode:string; permission:string };
 
 const ROLE_LABELS: Record<AppLocale, Record<string,string>> = {
   ar: {
-    super_admin:"مدير عام", admin:"مدير نظام", finance:"مالية",
-    hr:"موارد بشرية", procurement:"مشتريات", inventory:"مخازن", viewer:"مشاهد",
+    super_admin:"مدير عام", admin:"مدير نظام", finance_manager:"مدير مالية",
+    program_manager:"مدير برامج", hr_manager:"مدير موارد بشرية",
+    procurement_officer:"مسؤول مشتريات", warehouse_manager:"مدير مخازن", viewer:"مشاهد",
   },
   en: {
-    super_admin:"Super admin", admin:"System admin", finance:"Finance",
-    hr:"Human resources", procurement:"Procurement", inventory:"Inventory", viewer:"Viewer",
+    super_admin:"Super admin", admin:"System admin", finance_manager:"Finance manager",
+    program_manager:"Program manager", hr_manager:"HR manager",
+    procurement_officer:"Procurement officer", warehouse_manager:"Warehouse manager", viewer:"Viewer",
   },
 };
 const MODULE_LABELS: Record<AppLocale, Record<string,string>> = {

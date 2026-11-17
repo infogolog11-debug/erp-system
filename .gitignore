@@ -10,8 +10,11 @@ build/
 # TypeScript incremental build info
 *.tsbuildinfo
 
-# Environment files (local overrides only; tracked templates keep .example/.template)
+# Environment files — لا تُودَع أسرار الإنتاج في المستودع.
+# متغيرات الإنتاج تُوفَّر فعلياً من render.yaml (Render) لا من هذا الملف.
+# القوالب .example/.template تبقى متتبَّعة كمرجع.
 .env
+.env.production
 .env.local
 .env*.local
 

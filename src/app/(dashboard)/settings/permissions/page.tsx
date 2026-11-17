@@ -5,10 +5,12 @@ import { users, userModulePermissions } from "@/db/schema";
 import { eq }     from "drizzle-orm";
 import PermissionsPanel from "@/modules/settings/components/PermissionsPanel";
 import { ROLE_DEFAULTS } from "@/lib/permissions/defaults";
+import { getRequestPreferences } from "@/lib/preferences";
 
 export default async function PermissionsPage() {
   const session = await auth();
   if (!session?.user) redirect("/");
+  const prefs   = await getRequestPreferences();
   const role    = session.user.role;
   const orgId   = session.user.organizationId;
   const myId    = session.user.id;
@@ -34,6 +36,7 @@ export default async function PermissionsPage() {
         moduleCode: p.moduleCode,
         permission: p.permission,
       }))}
+      locale={prefs.locale}
     />
   );
 }

@@ -5,21 +5,27 @@ import { usePathname } from "next/navigation";
 import { cn }      from "@/lib/utils";
 import type { AppLocale } from "@/lib/preferences";
 
+// ⚠️ قيم كل مصفوفة roles يجب أن تطابق حرفياً قيم enum "user_role" في قاعدة
+// البيانات (finance_manager / hr_manager / procurement_officer / warehouse_manager
+// / program_manager) — الأسماء المختصرة السابقة (finance/hr/procurement/inventory)
+// لم تكن موجودة في قاعدة البيانات فكانت القائمة تظهر فارغة لهذه الأدوار.
+const ALL_STAFF = ["super_admin","admin","finance_manager","program_manager","hr_manager","procurement_officer","warehouse_manager","viewer"] as const;
+
 const NAV_ITEMS = [
-  { label:{ ar:"لوحة التحكم", en:"Dashboard" },   href:"/",             icon:"home",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },
-  { label:{ ar:"المنح", en:"Grants" },          href:"/grants",        icon:"coins",         roles:["super_admin","admin","finance","viewer"] },
-  { label:{ ar:"المستفيدون", en:"Beneficiaries" },     href:"/beneficiaries", icon:"users-group",   roles:["super_admin","admin","finance","viewer"] },
-  { label:{ ar:"الشركاء المنفّذون", en:"Partners" }, href:"/partners",   icon:"building-community", roles:["super_admin","admin","finance","viewer"] },
-  { label:{ ar:"إدارة الأسطول", en:"Fleet" },  href:"/logistics/fleet", icon:"truck", roles:["super_admin","admin","procurement","inventory","viewer"] },
-  { label:{ ar:"الشكاوى والتغذية الراجعة", en:"Complaints & Feedback" }, href:"/cfm", icon:"message-report", roles:["super_admin","admin","finance","hr","viewer"] },
-  { label:{ ar:"الخريطة الجغرافية", en:"GIS Map" }, href:"/reports/gis-map", icon:"map-pin", roles:["super_admin","admin","finance","viewer"] },
-  { label:{ ar:"الموردون", en:"Vendors" },       href:"/vendors",       icon:"truck",         roles:["super_admin","admin","finance","procurement","viewer"] },
-  { label:{ ar:"المشتريات", en:"Procurement" },      href:"/procurement",   icon:"shopping-cart", roles:["super_admin","admin","finance","procurement","viewer"] },
-  { label:{ ar:"الوكلاء (HR)", en:"Agents (HR)" },href:"/hr",            icon:"users",         roles:["super_admin","admin","hr","viewer"] },
-  { label:{ ar:"المخزون", en:"Inventory" },        href:"/inventory",     icon:"package",       roles:["super_admin","admin","inventory","procurement","viewer"] },
-  { label:{ ar:"المحاسبة", en:"Accounting" },       href:"/accounting",    icon:"calculator",    roles:["super_admin","admin","finance","viewer"] },
-  { label:{ ar:"الإشعارات", en:"Notifications" },      href:"/notifications", icon:"bell",          roles:["super_admin","admin","finance","hr","procurement","inventory","viewer"] },
-  { label:{ ar:"التقارير", en:"Reports" },       href:"/reports",       icon:"chart-bar",     roles:["super_admin","admin","finance"] },
+  { label:{ ar:"لوحة التحكم", en:"Dashboard" },   href:"/",             icon:"home",          roles:ALL_STAFF },
+  { label:{ ar:"المنح", en:"Grants" },          href:"/grants",        icon:"coins",         roles:["super_admin","admin","finance_manager","program_manager","viewer"] },
+  { label:{ ar:"المستفيدون", en:"Beneficiaries" },     href:"/beneficiaries", icon:"users-group",   roles:["super_admin","admin","finance_manager","program_manager","viewer"] },
+  { label:{ ar:"الشركاء المنفّذون", en:"Partners" }, href:"/partners",   icon:"building-community", roles:["super_admin","admin","finance_manager","program_manager","procurement_officer","viewer"] },
+  { label:{ ar:"إدارة الأسطول", en:"Fleet" },  href:"/logistics/fleet", icon:"truck", roles:["super_admin","admin","procurement_officer","warehouse_manager","program_manager","viewer"] },
+  { label:{ ar:"الشكاوى والتغذية الراجعة", en:"Complaints & Feedback" }, href:"/cfm", icon:"message-report", roles:["super_admin","admin","finance_manager","hr_manager","program_manager","viewer"] },
+  { label:{ ar:"الخريطة الجغرافية", en:"GIS Map" }, href:"/reports/gis-map", icon:"map-pin", roles:["super_admin","admin","finance_manager","program_manager","viewer"] },
+  { label:{ ar:"الموردون", en:"Vendors" },       href:"/vendors",       icon:"truck",         roles:["super_admin","admin","finance_manager","procurement_officer","program_manager","viewer"] },
+  { label:{ ar:"المشتريات", en:"Procurement" },      href:"/procurement",   icon:"shopping-cart", roles:["super_admin","admin","finance_manager","procurement_officer","program_manager","viewer"] },
+  { label:{ ar:"الوكلاء (HR)", en:"Agents (HR)" },href:"/hr",            icon:"users",         roles:["super_admin","admin","hr_manager","finance_manager","program_manager","viewer"] },
+  { label:{ ar:"المخزون", en:"Inventory" },        href:"/inventory",     icon:"package",       roles:["super_admin","admin","warehouse_manager","procurement_officer","program_manager","viewer"] },
+  { label:{ ar:"المحاسبة", en:"Accounting" },       href:"/accounting",    icon:"calculator",    roles:["super_admin","admin","finance_manager","viewer"] },
+  { label:{ ar:"الإشعارات", en:"Notifications" },      href:"/notifications", icon:"bell",          roles:ALL_STAFF },
+  { label:{ ar:"التقارير", en:"Reports" },       href:"/reports",       icon:"chart-bar",     roles:["super_admin","admin","finance_manager","program_manager","viewer"] },
   {
     label:{ ar:"الإعدادات", en:"Settings" }, href:"/settings", icon:"settings-2",
     roles:["super_admin","admin"],

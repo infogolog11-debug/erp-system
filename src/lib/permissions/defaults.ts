@@ -1,11 +1,16 @@
+// ⚠️ المفاتيح تطابق حرفياً قيم enum "user_role" في قاعدة البيانات، وتطابق أيضاً
+// ROLE_DEFAULTS في src/lib/permissions/service.ts (النسخة المربوطة فعلياً بفحص
+// الصلاحيات). هذا الملف منفصل عنها لأن هذا الأخير يُستورد في مكوّن client
+// ولا يجوز أن يجرّ معه اتصال قاعدة البيانات.
 export const ROLE_DEFAULTS: Record<string, Record<string,string>> = {
   super_admin: { grants:"admin", procurement:"admin", vendors:"admin",  hr:"admin", inventory:"admin", accounting:"admin",  reports:"admin", settings:"admin"  },
   admin:       { grants:"admin", procurement:"admin", vendors:"admin",  hr:"admin", inventory:"admin", accounting:"admin",  reports:"admin", settings:"admin"  },
-  finance:     { grants:"edit",  procurement:"edit",  vendors:"view",   hr:"view",  inventory:"view",  accounting:"admin",  reports:"admin", settings:"none"   },
-  hr:          { grants:"view",  procurement:"view",  vendors:"none",   hr:"admin", inventory:"view",  accounting:"none",   reports:"view",  settings:"none"   },
-  procurement: { grants:"view",  procurement:"admin", vendors:"edit",   hr:"none",  inventory:"edit",  accounting:"none",   reports:"view",  settings:"none"   },
-  inventory:   { grants:"none",  procurement:"view",  vendors:"view",   hr:"none",  inventory:"admin", accounting:"none",   reports:"view",  settings:"none"   },
-  viewer:      { grants:"view",  procurement:"view",  vendors:"view",   hr:"view",  inventory:"view",  accounting:"view",   reports:"view",  settings:"none"   },
+  finance_manager:     { grants:"edit",  procurement:"edit",   vendors:"view",   hr:"view",  inventory:"view",  accounting:"admin",  reports:"admin", settings:"none"   },
+  program_manager:     { grants:"edit",  procurement:"create", vendors:"view",   hr:"view",  inventory:"view",  accounting:"none",   reports:"view",  settings:"none"   },
+  hr_manager:          { grants:"view",  procurement:"view",   vendors:"none",   hr:"admin", inventory:"view",  accounting:"none",   reports:"view",  settings:"none"   },
+  procurement_officer: { grants:"view",  procurement:"admin",  vendors:"edit",   hr:"none",  inventory:"edit",  accounting:"none",   reports:"view",  settings:"none"   },
+  warehouse_manager:   { grants:"none",  procurement:"view",   vendors:"view",   hr:"none",  inventory:"admin", accounting:"none",   reports:"view",  settings:"none"   },
+  viewer:              { grants:"view",  procurement:"view",   vendors:"view",   hr:"view",  inventory:"view",  accounting:"view",   reports:"view",  settings:"none"   },
 };
 
 export const MODULES = [

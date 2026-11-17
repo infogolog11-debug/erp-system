@@ -17,14 +17,21 @@ export type ModuleCode =
   | "fleet"|"screening";
 
 // صلاحيات الأدوار الافتراضية (تُستخدم إذا لم تُعيَّن صلاحية مخصصة)
+//
+// ⚠️ المفاتيح هنا يجب أن تطابق حرفياً قيم enum "user_role" في قاعدة البيانات
+// (src/db/schema/shared.ts) — كانت سابقاً بأسماء مختصرة (finance/hr/procurement/
+// inventory) لا وجود لها في قاعدة البيانات، فكانت getUserPermission تُرجع "none"
+// لكل الوحدات لأي مستخدم بهذه الأدوار، ويصبح الوصول إليه معطلاً بالكامل.
 const ROLE_DEFAULTS: Record<string, Record<ModuleCode, PermissionLevel>> = {
   super_admin: { grants:"admin", procurement:"admin", vendors:"admin",  hr:"admin", inventory:"admin", accounting:"admin",  reports:"admin", settings:"admin", notifications:"admin", beneficiaries:"admin", partners:"admin", cfm:"admin", fleet:"admin", screening:"admin" },
   admin:       { grants:"admin", procurement:"admin", vendors:"admin",  hr:"admin", inventory:"admin", accounting:"admin",  reports:"admin", settings:"admin", notifications:"admin", beneficiaries:"admin", partners:"admin", cfm:"admin", fleet:"admin", screening:"admin" },
-  finance:     { grants:"edit",  procurement:"edit",  vendors:"view",   hr:"view",  inventory:"view",  accounting:"admin",  reports:"admin", settings:"none",  notifications:"view",  beneficiaries:"view",  partners:"view",  cfm:"view",  fleet:"view",  screening:"none" },
-  hr:          { grants:"view",  procurement:"view",  vendors:"none",   hr:"admin", inventory:"view",  accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"none",  partners:"none",  cfm:"view",  fleet:"none",  screening:"none" },
-  procurement: { grants:"view",  procurement:"admin", vendors:"edit",   hr:"none",  inventory:"edit",  accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"none",  partners:"view",  cfm:"none",  fleet:"edit",  screening:"view" },
-  inventory:   { grants:"none",  procurement:"view",  vendors:"view",   hr:"none",  inventory:"admin", accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"none",  partners:"none",  cfm:"none",  fleet:"edit",  screening:"none" },
-  viewer:      { grants:"view",  procurement:"view",  vendors:"view",   hr:"view",  inventory:"view",  accounting:"view",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"view",  partners:"view",  cfm:"view",  fleet:"view",  screening:"none" },
+  finance_manager:     { grants:"edit",  procurement:"edit",  vendors:"view",   hr:"view",  inventory:"view",  accounting:"admin",  reports:"admin", settings:"none",  notifications:"view",  beneficiaries:"view",  partners:"view",  cfm:"view",  fleet:"view",  screening:"none" },
+  // program_manager: لم يكن له أي تعريف سابقاً (كان يسقط على viewer أو على "none")
+  program_manager:     { grants:"edit",  procurement:"create", vendors:"view",  hr:"view",  inventory:"view",  accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"view",  partners:"view",  cfm:"view",  fleet:"view",  screening:"none" },
+  hr_manager:          { grants:"view",  procurement:"view",  vendors:"none",   hr:"admin", inventory:"view",  accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"none",  partners:"none",  cfm:"view",  fleet:"none",  screening:"none" },
+  procurement_officer: { grants:"view",  procurement:"admin", vendors:"edit",   hr:"none",  inventory:"edit",  accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"none",  partners:"view",  cfm:"none",  fleet:"edit",  screening:"view" },
+  warehouse_manager:   { grants:"none",  procurement:"view",  vendors:"view",   hr:"none",  inventory:"admin", accounting:"none",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"none",  partners:"none",  cfm:"none",  fleet:"edit",  screening:"none" },
+  viewer:              { grants:"view",  procurement:"view",  vendors:"view",   hr:"view",  inventory:"view",  accounting:"view",   reports:"view",  settings:"none",  notifications:"view",  beneficiaries:"view",  partners:"view",  cfm:"view",  fleet:"view",  screening:"none" },
 };
 
 const PERMISSION_RANK: Record<PermissionLevel, number> = {
