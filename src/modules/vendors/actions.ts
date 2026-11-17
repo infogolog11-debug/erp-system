@@ -18,6 +18,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requirePermission, assertOrgMatches } from "@/lib/auth/guard";
 import { assertOwnedByOrg } from "@/lib/auth/ownership";
+import { TENDER_TYPE_KEYS, tenderTypeIsSealed } from "@/lib/i18n";
 
 type ActionResult<T=void> =
   | { success:true; data:T }
@@ -425,6 +426,7 @@ const CreateTenderSchema = z.object({
   title:              textField(300, 1),
   titleAr:            optionalTextField(300),
   category:           textField(100, 1),
+  tenderType:         z.enum(TENDER_TYPE_KEYS).optional(),
   description:        optionalTextField(2000),
   estimatedValue:     z.number().min(0).optional(),
   currencyId:         z.string().uuid().optional(),
@@ -455,6 +457,7 @@ export async function createTender(
       titleAr:            v.data.titleAr || undefined,
       description:        v.data.description || undefined,
       category:           v.data.category,
+      tenderType:         v.data.tenderType ?? "open",
       estimatedValue:     v.data.estimatedValue != null ? String(v.data.estimatedValue) : undefined,
       currencyId:         v.data.currencyId || undefined,
       submissionDeadline: v.data.submissionDeadline,
@@ -504,6 +507,8 @@ export async function addTenderBid(
       organizationId: v.data.organizationId,
       bidAmount:      String(v.data.bidAmount),
       currencyId:     v.data.currencyId,
+      // نوع المناقصة يحدد إن كان العرض مظروفاً/سرّياً (مناقصة عامة/محدودة/اتفاقية إطارية)
+      isSealed:       tenderTypeIsSealed(tender.tenderType),
       createdBy:      userId,
     }).returning();
 

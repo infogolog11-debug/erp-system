@@ -81,3 +81,52 @@ export const procurementPriorityLabels = {
     low: "Low",
   },
 } as const;
+
+// ── أنواع المناقصات (Tender Types) ──────────────────────────────────────
+// sealed = تُقدَّم العروض مظروفة/سرّية (لا تُكشف قبل موعد الفتح)
+export const TENDER_TYPES = [
+  { key: "open",            sealed: true  },
+  { key: "limited",         sealed: true  },
+  { key: "itb",             sealed: true  },
+  { key: "framework",       sealed: true  },
+  { key: "rfq",             sealed: false },
+  { key: "rfp",             sealed: false },
+  { key: "direct",          sealed: false },
+  { key: "reverse_auction", sealed: false },
+] as const;
+
+export type TenderTypeKey = (typeof TENDER_TYPES)[number]["key"];
+
+export const TENDER_TYPE_KEYS = TENDER_TYPES.map(t => t.key) as unknown as [TenderTypeKey, ...TenderTypeKey[]];
+
+export const tenderTypeLabels: Record<AppLocale, Record<TenderTypeKey, string>> = {
+  ar: {
+    open:            "مناقصة عامة",
+    limited:         "مناقصة محدودة",
+    itb:             "دعوة لتقديم عطاء",
+    framework:       "اتفاقية إطارية",
+    rfq:             "طلب عرض سعر",
+    rfp:             "طلب تقديم مقترح",
+    direct:          "شراء مباشر",
+    reverse_auction: "مزاد عكسي",
+  },
+  en: {
+    open:            "Open tender",
+    limited:         "Limited tender",
+    itb:             "Invitation to bid",
+    framework:       "Framework agreement",
+    rfq:             "Request for quotation",
+    rfp:             "Request for proposal",
+    direct:          "Direct purchase",
+    reverse_auction: "Reverse auction",
+  },
+};
+
+export function tenderTypeLabel(key: string | null | undefined, locale: AppLocale = "ar") {
+  const table = tenderTypeLabels[locale] ?? tenderTypeLabels.ar;
+  return table[key as TenderTypeKey] ?? key ?? "—";
+}
+
+export function tenderTypeIsSealed(key: string | null | undefined) {
+  return TENDER_TYPES.find(t => t.key === key)?.sealed ?? true;
+}

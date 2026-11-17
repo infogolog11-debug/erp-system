@@ -61,6 +61,8 @@ export const tenders = pgTable("tenders",{
   titleAr:        text("title_ar"),
   description:    text("description"),
   category:       text("category").notNull(),
+  // open|limited|itb|framework|rfq|rfp|direct|reverse_auction — راجع TENDER_TYPES في src/lib/i18n.ts
+  tenderType:     text("tender_type").default("open").notNull(),
   estimatedValue: decimal("estimated_value",{precision:18,scale:2}),
   currencyId:     uuid("currency_id").references(()=>currencies.id),
   submissionDeadline: text("submission_deadline").notNull(),

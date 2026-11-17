@@ -10,6 +10,7 @@ import AddBidForm from "@/modules/vendors/components/AddBidForm";
 import ChatterBox    from "@/components/shared/ChatterBox";
 import { getRequestPreferences } from "@/lib/preferences";
 import type { AppLocale } from "@/lib/preferences";
+import { tenderTypeLabel, tenderTypeIsSealed } from "@/lib/i18n";
 
 export default async function TenderDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
@@ -44,17 +45,21 @@ export default async function TenderDetailPage({ params: paramsPromise }: { para
   ]);
 
   const STATUS_STYLE: Record<string,string> = {
-    draft:    "text-[#4B5563]",
-    open:     "text-[#1D9E75]",
-    closed:   "text-[#EF9F27]",
-    awarded:  "text-[#378ADD]",
-    cancelled:"text-[#E24B4A]",
+    draft:     "text-[#4B5563]",
+    submitted: "text-[#EF9F27]",
+    approved:  "text-[#1D9E75]",
+    rejected:  "text-[#E24B4A]",
+    done:      "text-[#378ADD]",
+    cancelled: "text-[#6B7280]",
   };
   const STATUS_LABEL: Record<AppLocale, Record<string,string>> = {
-    ar: { draft:"مسودة", open:"مفتوحة", closed:"مقفلة", awarded:"مُرسية", cancelled:"ملغية" },
-    en: { draft:"Draft", open:"Open", closed:"Closed", awarded:"Awarded", cancelled:"Cancelled" },
+    ar: { draft:"مسودة", submitted:"مُقدَّمة", approved:"معتمدة", rejected:"مرفوضة", done:"منجزة", cancelled:"ملغية" },
+    en: { draft:"Draft", submitted:"Submitted", approved:"Approved", rejected:"Rejected", done:"Done", cancelled:"Cancelled" },
   };
   const labelMap = STATUS_LABEL[prefs.locale] ?? STATUS_LABEL.ar;
+  const isAr     = prefs.locale === "ar";
+  const typeKey  = tender.tenderType;
+  const sealedBids = tender.bids.some((b:any) => b.isSealed);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
@@ -62,15 +67,25 @@ export default async function TenderDetailPage({ params: paramsPromise }: { para
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-xs font-mono text-[#4B5563] bg-[#161B26] px-2 py-0.5 rounded-md">{tender.code}</span>
-            <span className={`text-xs font-medium ${STATUS_STYLE[tender.status]}`}>● {labelMap[tender.status]}</span>
+            <span className="text-xs font-medium text-[#9CA3AF] bg-[#161B26] border border-[#1F2937] px-2 py-0.5 rounded-md">
+              <i className={`ti ${tenderTypeIsSealed(typeKey) ? "ti-lock" : "ti-lock-open"} text-[11px] ml-1`} aria-hidden="true" />
+              {tenderTypeLabel(typeKey, prefs.locale)}
+            </span>
+            <span className={`text-xs font-medium ${STATUS_STYLE[tender.status] ?? "text-[#6B7280]"}`}>● {labelMap[tender.status] ?? tender.status}</span>
           </div>
           <h1 className="text-xl font-semibold text-white">{tender.title}</h1>
+          {tender.category && <p className="text-xs text-[#6B7280] mt-1">{isAr ? "التصنيف:" : "Category:"} {tender.category}</p>}
         </div>
         <div className="text-left">
-          <p className="text-sm text-[#4B5563]">{tender.bids.length} {prefs.locale === "ar" ? "عرض" : "bids"}</p>
+          <p className="text-sm text-[#4B5563]">{tender.bids.length} {isAr ? "عرض" : "bids"}</p>
+          {sealedBids && (
+            <p className="text-xs text-[#EF9F27] mt-1 flex items-center gap-1">
+              <i className="ti ti-lock text-[11px]" aria-hidden="true" />{isAr ? "عروض مظروفة" : "Sealed bids"}
+            </p>
+          )}
           {tender.submissionDeadline && (
             <p className="text-xs text-[#6B7280] mt-1">
-              {prefs.locale === "ar" ? "الإغلاق:" : "Closing:"} {new Date(tender.submissionDeadline).toLocaleDateString(prefs.locale === "ar" ? "ar" : "en-US")}
+              {isAr ? "الإغلاق:" : "Closing:"} {new Date(tender.submissionDeadline).toLocaleDateString(isAr ? "ar" : "en-US")}
             </p>
           )}
         </div>

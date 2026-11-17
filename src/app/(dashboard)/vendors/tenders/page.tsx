@@ -10,13 +10,14 @@ import PaginationBar from "@/components/shared/PaginationBar";
 import { parsePagination } from "@/lib/pagination/parse";
 import { getRequestPreferences } from "@/lib/preferences";
 import type { AppLocale } from "@/lib/preferences";
+import { TENDER_TYPES, TENDER_TYPE_KEYS, tenderTypeLabel } from "@/lib/i18n";
 
 const STATUS_LABEL: Record<AppLocale, Record<string,string>> = {
   ar: { draft:"مسودة", submitted:"مُقدَّمة", approved:"معتمدة", rejected:"مرفوضة", done:"منجزة", cancelled:"ملغية" },
   en: { draft:"Draft", submitted:"Submitted", approved:"Approved", rejected:"Rejected", done:"Done", cancelled:"Cancelled" },
 };
 
-export default async function TendersPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?:string }> }) {
+export default async function TendersPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ page?:string; type?:string }> }) {
   const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user) return null;
@@ -27,7 +28,13 @@ export default async function TendersPage({ searchParams: searchParamsPromise }:
   const permCreate = canCreate(__perm);
 
   const { limit, offset, page } = parsePagination(searchParams);
-  const where = and(eq(tenders.organizationId, orgId), eq(tenders.isArchived, false));
+  const isAr = prefs.locale === "ar";
+  const typeFilter = TENDER_TYPE_KEYS.includes(searchParams.type as any) ? searchParams.type! : "";
+  const where = and(
+    eq(tenders.organizationId, orgId),
+    eq(tenders.isArchived, false),
+    typeFilter ? eq(tenders.tenderType, typeFilter) : undefined,
+  );
 
   const [pageTenders, totalRow] = await Promise.all([
     db.query.tenders.findMany({
@@ -58,12 +65,32 @@ export default async function TendersPage({ searchParams: searchParamsPromise }:
         )}
       </div>
 
+      {/* تصفية حسب نوع المناقصة */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Link
+          href="/vendors/tenders"
+          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${!typeFilter ? "bg-[#0F6E56] border-[#0F6E56] text-white" : "bg-[#161B26] border-[#1F2937] text-[#9CA3AF] hover:text-[#D1D5DB]"}`}
+        >
+          {isAr ? "كل الأنواع" : "All types"}
+        </Link>
+        {TENDER_TYPES.map(t => (
+          <Link
+            key={t.key}
+            href={`/vendors/tenders?type=${t.key}`}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${typeFilter === t.key ? "bg-[#0F6E56] border-[#0F6E56] text-white" : "bg-[#161B26] border-[#1F2937] text-[#9CA3AF] hover:text-[#D1D5DB]"}`}
+          >
+            {tenderTypeLabel(t.key, prefs.locale)}
+          </Link>
+        ))}
+      </div>
+
       <div className="bg-[#0F1117] border border-[#1F2937] rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#1F2937] text-xs text-[#6B7280]">
               <th className="text-right font-medium px-4 py-3">{prefs.locale === "ar" ? "الكود" : "Code"}</th>
               <th className="text-right font-medium px-4 py-3">{prefs.locale === "ar" ? "العنوان" : "Title"}</th>
+              <th className="text-right font-medium px-4 py-3">{prefs.locale === "ar" ? "النوع" : "Type"}</th>
               <th className="text-right font-medium px-4 py-3">{prefs.locale === "ar" ? "التصنيف" : "Category"}</th>
               <th className="text-right font-medium px-4 py-3">{prefs.locale === "ar" ? "القيمة التقديرية" : "Estimated value"}</th>
               <th className="text-right font-medium px-4 py-3">{prefs.locale === "ar" ? "آخر موعد للتقديم" : "Submission deadline"}</th>
@@ -73,7 +100,7 @@ export default async function TendersPage({ searchParams: searchParamsPromise }:
           <tbody>
             {allTenders.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-[#4B5563]">
+                <td colSpan={7} className="px-4 py-10 text-center text-[#4B5563]">
                   {prefs.locale === "ar" ? "لا توجد مناقصات بعد" : "No tenders yet"}
                 </td>
               </tr>
@@ -85,6 +112,9 @@ export default async function TendersPage({ searchParams: searchParamsPromise }:
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/vendors/tenders/${t.id}`} className="text-[#D1D5DB] hover:text-[#1D9E75] transition-colors">{t.title}</Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs text-[#9CA3AF] bg-[#161B26] px-2 py-0.5 rounded-md whitespace-nowrap">{tenderTypeLabel(t.tenderType, prefs.locale)}</span>
                   </td>
                   <td className="px-4 py-3 text-[#9CA3AF]">{t.category}</td>
                   <td className="px-4 py-3 text-[#9CA3AF] tabular-nums" dir="ltr">{t.estimatedValue ? Number(t.estimatedValue).toLocaleString(prefs.locale === "ar" ? "ar" : "en-US") : "—"}</td>

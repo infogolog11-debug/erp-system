@@ -60,6 +60,7 @@ async function runMigrations() {
       "015_payroll_run_uniqueness.sql",
       "016_budget_and_disbursement_guards.sql",
       "017_grant_beneficiaries_target.sql",
+      "018_tender_types.sql",
     ];
 
     for (const file of migrations) {

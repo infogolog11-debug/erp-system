@@ -2,7 +2,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { commonCopy } from "@/lib/i18n";
+import { commonCopy, TENDER_TYPES, tenderTypeLabel, tenderTypeIsSealed } from "@/lib/i18n";
 import type { AppLocale } from "@/lib/preferences";
 import { createTender } from "@/modules/vendors/actions";
 
@@ -20,6 +20,9 @@ export default function TenderForm({ currencies, organizationId, userId, locale 
     title: locale === "ar" ? "العنوان" : "Title",
     titleAr: locale === "ar" ? "العنوان بالعربية" : "Arabic title",
     category: locale === "ar" ? "التصنيف" : "Category",
+    tenderType: locale === "ar" ? "نوع المناقصة" : "Tender type",
+    sealedBids: locale === "ar" ? "عروض مظروفة (لا تُكشف قبل موعد الفتح)" : "Sealed bids (not disclosed before opening)",
+    openBids: locale === "ar" ? "عروض مفتوحة" : "Open bids",
     estimatedValue: locale === "ar" ? "القيمة التقديرية" : "Estimated value",
     currency: locale === "ar" ? "العملة" : "Currency",
     submissionDeadline: locale === "ar" ? "آخر موعد للتقديم" : "Submission deadline",
@@ -30,7 +33,7 @@ export default function TenderForm({ currencies, organizationId, userId, locale 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    code:"", title:"", titleAr:"", category:"", estimatedValue:"",
+    code:"", title:"", titleAr:"", category:"", tenderType:"open", estimatedValue:"",
     currencyId:"", submissionDeadline:"", openingDate:"", description:"",
   });
   const upd = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -44,6 +47,7 @@ export default function TenderForm({ currencies, organizationId, userId, locale 
         title:              form.title,
         titleAr:            form.titleAr || undefined,
         category:           form.category,
+        tenderType:         form.tenderType as typeof TENDER_TYPES[number]["key"],
         description:        form.description || undefined,
         estimatedValue:     form.estimatedValue === "" ? undefined : Number(form.estimatedValue),
         currencyId:         form.currencyId || undefined,
@@ -68,15 +72,24 @@ export default function TenderForm({ currencies, organizationId, userId, locale 
         </div>
         <div className="grid grid-cols-3 gap-4">
           <F label={copy.category} required><input value={form.category} onChange={e=>upd("category",e.target.value)} className={inputCls} placeholder={locale === "ar" ? "مثال: إنشاءات" : "e.g. Construction"} required /></F>
-          <F label={copy.estimatedValue}><input type="number" min="0" step="0.01" value={form.estimatedValue} onChange={e=>upd("estimatedValue",e.target.value)} className={inputCls} placeholder="0.00" dir="ltr" /></F>
+          <F label={copy.tenderType} required>
+            <select value={form.tenderType} onChange={e=>upd("tenderType",e.target.value)} className={inputCls+" cursor-pointer"} required>
+              {TENDER_TYPES.map(t => <option key={t.key} value={t.key}>{tenderTypeLabel(t.key, locale)}</option>)}
+            </select>
+            <p className="mt-1.5 text-[11px] text-[#4B5563] flex items-center gap-1">
+              <i className={`ti ${tenderTypeIsSealed(form.tenderType) ? "ti-lock" : "ti-lock-open"} text-[12px]`} aria-hidden="true" />
+              {tenderTypeIsSealed(form.tenderType) ? copy.sealedBids : copy.openBids}
+            </p>
+          </F>
           <F label={copy.currency}>
             <select value={form.currencyId} onChange={e=>upd("currencyId",e.target.value)} className={inputCls+" cursor-pointer"}>
               <option value="">{t.select}</option>
-              {currencies.map((c:any) => <option key={c.id} value={c.id}>{c.code}{c.name ? ` — ${c.name}` : ""}</option>)}
+              {currencies.map((c:any) => <option key={c.id} value={c.id}>{c.code}{c.name ? " - " + c.name : ""}</option>)}
             </select>
           </F>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <F label={copy.estimatedValue}><input type="number" min="0" step="0.01" value={form.estimatedValue} onChange={e=>upd("estimatedValue",e.target.value)} className={inputCls} placeholder="0.00" dir="ltr" /></F>
           <F label={copy.submissionDeadline} required><input type="date" value={form.submissionDeadline} onChange={e=>upd("submissionDeadline",e.target.value)} className={inputCls} required dir="ltr" /></F>
           <F label={copy.openingDate}><input type="date" value={form.openingDate} onChange={e=>upd("openingDate",e.target.value)} className={inputCls} dir="ltr" /></F>
         </div>
