@@ -59,7 +59,7 @@ export default async function DonorReportPage({
 
     report = computeUnhcrIPR(grantInput, lineInputs, {
       beneficiariesReached: Number(benCount?.cnt ?? 0),
-      beneficiariesTargeted: Number(benCount?.cnt ?? 0) || 100, // بدون هدف مُعرَّف مسبقاً بعد — يُقارَن بذاته مؤقتاً
+      beneficiariesTargeted: Number(grant.beneficiariesTarget ?? 0),
       distributionsCount: Number(distStats?.cnt ?? 0),
       totalDistributionValue: Number(distStats?.totalCash ?? 0),
     });

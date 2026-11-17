@@ -1,22 +1,24 @@
+# Dependencies
 node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
+
+# Next.js / build output
+.next/
+out/
+dist/
+build/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Environment files (local overrides only; tracked templates keep .example/.template)
+.env
+.env.local
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db

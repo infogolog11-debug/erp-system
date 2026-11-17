@@ -1,5 +1,5 @@
 import { auth }     from "@/auth";
-import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getUserPermission, canView, canApprove as canApprovePerm } from "@/lib/permissions/service";
 import { db }       from "@/db";
 import { employees, contracts, salaryComponents, attendance, leaveRequests, payrollLines } from "@/db/schema";
 import { eq, and, desc, gte } from "drizzle-orm";
@@ -8,6 +8,7 @@ import Link         from "next/link";
 import { getRequestPreferences } from "@/lib/preferences";
 import ChatterBox   from "@/components/shared/ChatterBox";
 import ContractAllowanceEditor from "@/modules/hr/components/ContractAllowanceEditor";
+import AttendanceLeavePanel from "@/modules/hr/components/AttendanceLeavePanel";
 
 export default async function EmployeeDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
@@ -205,6 +206,23 @@ export default async function EmployeeDetailPage({ params: paramsPromise }: { pa
               ))}
             </div>
           </div>
+
+          {/* الحضور والإجازات — إدخال */}
+          <AttendanceLeavePanel
+            employeeId={emp.id}
+            organizationId={orgId}
+            userId={userId}
+            locale={prefs.locale}
+            canApprove={canApprovePerm(__perm)}
+            leaves={leaves.map(l => ({
+              id: l.id,
+              leaveType: l.leaveType,
+              startDate: new Date(l.startDate).toISOString(),
+              endDate: new Date(l.endDate).toISOString(),
+              totalDays: l.totalDays,
+              status: l.status,
+            }))}
+          />
 
           {/* آخر كشوف الرواتب */}
           {recentPayroll.length > 0 && (

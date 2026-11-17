@@ -6,7 +6,7 @@ import { errMsg } from "@/types/db";
 
 import { db } from "@/db";
 import {
-  vendorRatings, vendors,
+  vendorRatings, vendors, vendorContacts,
   bidEvaluationCriteria, bidEvaluations, tenderBids,
   purchaseRequests, purchaseOrders, goodsReceiptNotes,
 } from "@/db/schema";
@@ -328,5 +328,91 @@ export async function flagEmergencyProcurement(
     return { success:true, data:undefined };
   } catch (e) {
     return { success:false, error: errMsg(e) };
+  }
+}
+
+// ─── إنشاء مورد ────────────────────────────────────────────────────────
+// كان زر "مورد جديد" يوجّه إلى /vendors بلا حفظ فعلي (لا توجد دالة إنشاء
+// إطلاقاً). هذا الإجراء يُنشئ المورد + جهة الاتصال الأساسية إن أُدخلت.
+const CreateVendorSchema = z.object({
+  organizationId:      z.string().uuid(),
+  name:                textField(200, 1),
+  nameAr:              optionalTextField(200),
+  code:                textField(50, 1),
+  vendorType:          z.enum(["supplier","contractor","consultant","individual"]),
+  taxNumber:           optionalTextField(100),
+  registrationNo:      optionalTextField(100),
+  country:             optionalTextField(100),
+  city:                optionalTextField(100),
+  address:             optionalTextField(300),
+  phone:               optionalTextField(50),
+  email:               z.string().email().optional().or(z.literal("")),
+  website:             optionalTextField(200),
+  preferredCurrencyId: z.string().uuid().optional().or(z.literal("")),
+  paymentTermsDays:    z.number().int().min(0).max(365).optional(),
+  contactName:         optionalTextField(150),
+  contactTitle:        optionalTextField(150),
+  contactEmail:        z.string().email().optional().or(z.literal("")),
+  contactPhone:        optionalTextField(50),
+});
+
+export async function createVendor(
+  formData: z.infer<typeof CreateVendorSchema>, userId: string,
+): Promise<ActionResult<{ id:string; code:string }>> {
+  try {
+    const v = CreateVendorSchema.safeParse(formData);
+    if (!v.success) return { success:false, error:v.error.errors[0].message };
+
+    const session = await requirePermission("vendors", "create");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(v.data.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const duplicate = await db.select({ id: vendors.id }).from(vendors)
+      .where(and(eq(vendors.organizationId, v.data.organizationId), eq(vendors.code, v.data.code)))
+      .limit(1);
+    if (duplicate.length) return { success:false, error:"كود المورد مستخدم مسبقاً" };
+
+    const [vendor] = await db.insert(vendors).values({
+      organizationId:      v.data.organizationId,
+      name:                v.data.name,
+      nameAr:              v.data.nameAr || undefined,
+      code:                v.data.code,
+      vendorType:          v.data.vendorType,
+      taxNumber:           v.data.taxNumber || undefined,
+      registrationNo:      v.data.registrationNo || undefined,
+      country:             v.data.country || undefined,
+      city:                v.data.city || undefined,
+      address:             v.data.address || undefined,
+      phone:               v.data.phone || undefined,
+      email:               v.data.email || undefined,
+      website:             v.data.website || undefined,
+      preferredCurrencyId: v.data.preferredCurrencyId || undefined,
+      paymentTermsDays:    v.data.paymentTermsDays ?? 30,
+      createdBy:           userId,
+    }).returning();
+
+    if (v.data.contactName) {
+      await db.insert(vendorContacts).values({
+        vendorId:       vendor.id,
+        organizationId: v.data.organizationId,
+        name:           v.data.contactName,
+        title:          v.data.contactTitle || undefined,
+        email:          v.data.contactEmail || undefined,
+        phone:          v.data.contactPhone || undefined,
+        isPrimary:      true,
+        createdBy:      userId,
+      });
+    }
+
+    await createAuditLog({
+      organizationId: v.data.organizationId, userId,
+      tableName:"vendors", recordId:vendor.id, action:"CREATE",
+      newValues:{ code:vendor.code, name:vendor.name, vendorType:vendor.vendorType },
+    });
+
+    revalidatePath("/vendors");
+    return { success:true, data:{ id:vendor.id, code:vendor.code } };
+  } catch (e) {
+    return { success:false, error: errMsg(e, "حدث خطأ في إضافة المورد") };
   }
 }

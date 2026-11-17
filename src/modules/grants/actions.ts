@@ -24,6 +24,8 @@ const CreateGrantSchema = z.object({
   endDate:        z.string(),
   grantManagerId: z.string().uuid().optional(),
   description:    optionalTextField(2000),
+  objectives:     optionalTextField(2000),
+  beneficiariesTarget: z.number().int().min(0).optional(),
 });
 
 type ActionResult<T=void> =

@@ -34,6 +34,8 @@ export const grants = pgTable("grants",{
   grantManagerId: uuid("grant_manager_id").references(()=>users.id),
   description:    text("description"),
   objectives:     text("objectives"),
+  // هدف المستفيدين المخطَّط للمنحة — يُستخدم في تقرير المانح (UNHCR IPR)
+  beneficiariesTarget: integer("beneficiaries_target"),
   isActive:       boolean("is_active").default(true).notNull(),
 },(t)=>({
   orgIdx:   index("grants_org_idx").on(t.organizationId),

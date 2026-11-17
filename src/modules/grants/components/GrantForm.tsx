@@ -25,7 +25,7 @@ export default function GrantForm({donors,currencies,managers,organizationId,use
   const [isPending,startTransition]=useTransition();
   const [error,setError]=useState("");
   const [lines,setLines]=useState<BudgetLine[]>([{code:"BL-001",name:"",budgetCategory:"staff",plannedAmount:""}]);
-  const [form,setForm]=useState({donorId:"",currencyId:"",code:"",name:"",nameAr:"",totalAmount:"",startDate:"",endDate:"",grantManagerId:"",description:""});
+  const [form,setForm]=useState({donorId:"",currencyId:"",code:"",name:"",nameAr:"",totalAmount:"",startDate:"",endDate:"",grantManagerId:"",description:"",beneficiariesTarget:""});
   const localeTag = getLocaleTag(locale);
   const common = commonCopy[locale];
   const t = locale === "ar"
@@ -42,6 +42,7 @@ export default function GrantForm({donors,currencies,managers,organizationId,use
         grantManager: "مدير المنحة",
         startDate: "تاريخ البداية",
         endDate: "تاريخ الانتهاء",
+        beneficiariesTarget: "هدف المستفيدين",
         description: "الوصف",
         descriptionPlaceholder: "وصف موجز...",
         budgetLines: "بنود الميزانية",
@@ -75,6 +76,7 @@ export default function GrantForm({donors,currencies,managers,organizationId,use
         grantManager: "Grant manager",
         startDate: "Start date",
         endDate: "End date",
+        beneficiariesTarget: "Beneficiaries target",
         description: "Description",
         descriptionPlaceholder: "Short description...",
         budgetLines: "Budget lines",
@@ -112,7 +114,12 @@ export default function GrantForm({donors,currencies,managers,organizationId,use
   function handleSubmit(e:React.FormEvent){
     e.preventDefault();setError("");
     startTransition(async()=>{
-      const res=await createGrant({...form,organizationId,totalAmount:Number(form.totalAmount)},userId);
+      const res=await createGrant({
+        ...form,
+        organizationId,
+        totalAmount:Number(form.totalAmount),
+        beneficiariesTarget: form.beneficiariesTarget === "" ? undefined : Number(form.beneficiariesTarget),
+      },userId);
       if(res.success)router.push(`/grants/${res.data.id}`);
       else setError(res.error);
     });
@@ -133,9 +140,10 @@ export default function GrantForm({donors,currencies,managers,organizationId,use
           <Field label={t.currency} required><select value={form.currencyId} onChange={e=>upd("currencyId",e.target.value)} className={inputCls+" cursor-pointer"} required><option value="">{common.select}</option>{currencies.map((c:any)=><option key={c.id} value={c.id}>{c.code}</option>)}</select></Field>
           <Field label={t.grantManager}><select value={form.grantManagerId} onChange={e=>upd("grantManagerId",e.target.value)} className={inputCls+" cursor-pointer"}><option value="">{t.optionalManager}</option>{managers.map((m:any)=><option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}</select></Field>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Field label={t.startDate} required><input type="date" value={form.startDate} onChange={e=>upd("startDate",e.target.value)} className={inputCls} required dir="ltr"/></Field>
           <Field label={t.endDate} required><input type="date" value={form.endDate} onChange={e=>upd("endDate",e.target.value)} className={inputCls} required dir="ltr"/></Field>
+          <Field label={t.beneficiariesTarget}><input type="number" value={form.beneficiariesTarget} onChange={e=>upd("beneficiariesTarget",e.target.value)} className={inputCls} placeholder="0" min="0" step="1" dir="ltr"/></Field>
         </div>
         <Field label={t.description}><textarea value={form.description} onChange={e=>upd("description",e.target.value)} className={inputCls+" resize-none"} rows={3} placeholder={t.descriptionPlaceholder}/></Field>
       </div>

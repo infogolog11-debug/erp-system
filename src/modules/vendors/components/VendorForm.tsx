@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { commonCopy } from "@/lib/i18n";
 import type { AppLocale } from "@/lib/preferences";
+import { createVendor } from "@/modules/vendors/actions";
 
 const inputCls = "w-full bg-[#0F1117] border border-[#2D3748] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#4B5563] focus:outline-none focus:border-[#0F6E56] focus:ring-1 focus:ring-[#0F6E56] transition-all";
 function F({ label, required, children }: { label:string; required?:boolean; children:React.ReactNode }) {
@@ -61,8 +62,14 @@ export default function VendorForm({ currencies, organizationId, userId, locale 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setError("");
     startTransition(async () => {
-      // TODO: استدعاء createVendor action
-      router.push("/vendors");
+      const res = await createVendor({
+        ...form,
+        organizationId,
+        vendorType: form.vendorType as "supplier" | "contractor" | "consultant" | "individual",
+        paymentTermsDays: form.paymentTermsDays === "" ? undefined : Number(form.paymentTermsDays),
+      }, userId);
+      if (res.success) router.push("/vendors");
+      else setError(res.error);
     });
   }
 

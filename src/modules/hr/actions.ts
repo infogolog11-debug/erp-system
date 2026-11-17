@@ -6,6 +6,7 @@ import {
   employees, contracts, payrollRuns, payrollLines,
   salaryComponents, grantBudgetLines, journalEntries, journalLines,
   attendance, payrollAdjustments,
+  departments, positions, leaveRequests,
 } from "@/db/schema";
 import { createAuditLog } from "@/core/audit/audit-trail";
 import { revalidatePath } from "next/cache";
@@ -13,6 +14,7 @@ import { eq, and, sql, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { requirePermission, assertOrgMatches } from "@/lib/auth/guard";
 import { assertOwnedByOrg } from "@/lib/auth/ownership";
+import { textField, optionalTextField } from "@/lib/security/sanitize";
 import { withIdempotency, IdempotencyInProgressError } from "@/lib/idempotency/guard";
 // ── حاسبة الرواتب (مدمجة من nexus-erp) ──
 import {
@@ -615,4 +617,306 @@ export async function listPayrollAdjustments(
     ),
     orderBy: (a, { desc }) => [desc(a.createdAt)],
   });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// إنشاء وكيل — كان زر "وكيل جديد" يوجّه إلى /hr/employees/new
+// وهو مسار غير موجود (404)، ولم تكن توجد أي دالة إنشاء وكلاء إطلاقاً
+// (الإضافة الوحيدة كانت من ملف الـ seed).
+// ══════════════════════════════════════════════════════════════════
+const CreateEmployeeSchema = z.object({
+  organizationId: z.string().uuid(),
+  code:           textField(30, 1),
+  firstName:      textField(100, 1),
+  lastName:       textField(100, 1),
+  firstNameAr:    optionalTextField(100),
+  lastNameAr:     optionalTextField(100),
+  gender:         z.enum(["male","female"]),
+  departmentId:   z.string().uuid(),
+  positionId:     z.string().uuid(),
+  managerId:      z.string().uuid().optional().or(z.literal("")),
+  dateOfBirth:    optionalTextField(30),
+  nationality:    optionalTextField(100),
+  nationalId:     optionalTextField(50),
+  passportNo:     optionalTextField(50),
+  phone:          optionalTextField(50),
+  email:          z.string().email().optional().or(z.literal("")),
+  address:        optionalTextField(300),
+  hireDate:       z.string(),
+  bankName:       optionalTextField(100),
+  bankAccount:    optionalTextField(60),
+  bankIban:       optionalTextField(60),
+  // ── العقد الابتدائي: بدونه لا يظهر الوكيل في مسير الرواتب لأن
+  //    processPayroll يعتمد على contracts.isCurrent ──
+  contractType:    z.enum(["full_time","part_time","consultant","volunteer","intern"]).optional(),
+  baseSalary:      z.number().min(0).optional(),
+  currencyId:      z.string().uuid().optional().or(z.literal("")),
+  contractEndDate: z.string().optional(),
+});
+
+export async function createEmployee(
+  formData: z.infer<typeof CreateEmployeeSchema>, userId: string,
+): Promise<ActionResult<{ id:string; code:string }>> {
+  try {
+    const v = CreateEmployeeSchema.safeParse(formData);
+    if (!v.success) return { success:false, error:v.error.errors[0].message };
+
+    const session = await requirePermission("hr", "create");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(v.data.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    // القسم لازم يكون تابع لنفس المنظمة، والوظيفة تابع لنفس القسم
+    const dept = await db.select({ id: departments.id }).from(departments)
+      .where(and(
+        eq(departments.id, v.data.departmentId),
+        eq(departments.organizationId, v.data.organizationId),
+      )).limit(1);
+    if (!dept.length) return { success:false, error:"القسم غير موجود في هذه المنظمة" };
+
+    const pos = await db.select({ id: positions.id }).from(positions)
+      .where(and(
+        eq(positions.id, v.data.positionId),
+        eq(positions.departmentId, v.data.departmentId),
+      )).limit(1);
+    if (!pos.length) return { success:false, error:"الوظيفة غير تابعة للقسم المحدد" };
+
+    const duplicate = await db.select({ id: employees.id }).from(employees)
+      .where(eq(employees.code, v.data.code)).limit(1);
+    if (duplicate.length) return { success:false, error:"كود الوكيل مستخدم مسبقاً" };
+
+    const hireDate = new Date(v.data.hireDate);
+    if (Number.isNaN(hireDate.getTime())) return { success:false, error:"تاريخ التعيين غير صالح" };
+
+    const [emp] = await db.insert(employees).values({
+      organizationId: v.data.organizationId,
+      code:           v.data.code,
+      firstName:      v.data.firstName,
+      lastName:       v.data.lastName,
+      firstNameAr:    v.data.firstNameAr || undefined,
+      lastNameAr:     v.data.lastNameAr || undefined,
+      gender:         v.data.gender,
+      departmentId:   v.data.departmentId,
+      positionId:     v.data.positionId,
+      managerId:      v.data.managerId || undefined,
+      dateOfBirth:    v.data.dateOfBirth || undefined,
+      nationality:    v.data.nationality || undefined,
+      nationalId:     v.data.nationalId || undefined,
+      passportNo:     v.data.passportNo || undefined,
+      phone:          v.data.phone || undefined,
+      email:          v.data.email || undefined,
+      address:        v.data.address || undefined,
+      hireDate,
+      bankName:       v.data.bankName || undefined,
+      bankAccount:    v.data.bankAccount || undefined,
+      bankIban:       v.data.bankIban || undefined,
+      createdBy:      userId,
+    }).returning();
+
+    if (v.data.baseSalary != null && v.data.currencyId) {
+      const endDate = v.data.contractEndDate ? new Date(v.data.contractEndDate) : undefined;
+      if (endDate && Number.isNaN(endDate.getTime())) return { success:false, error:"تاريخ انتهاء العقد غير صالح" };
+
+      await db.insert(contracts).values({
+        employeeId:     emp.id,
+        organizationId: v.data.organizationId,
+        contractType:   v.data.contractType ?? "full_time",
+        startDate:      hireDate,
+        endDate,
+        baseSalary:     String(v.data.baseSalary),
+        currencyId:     v.data.currencyId,
+        isCurrent:      true,
+        createdBy:      userId,
+      });
+    }
+
+    await createAuditLog({
+      organizationId: v.data.organizationId, userId,
+      tableName:"employees", recordId:emp.id, action:"CREATE",
+      newValues:{ code: emp.code, firstName: emp.firstName, lastName: emp.lastName, departmentId: emp.departmentId },
+    });
+
+    revalidatePath("/hr");
+    return { success:true, data:{ id:emp.id, code:emp.code } };
+  } catch (e) {
+    return { success:false, error:errMsg(e, "حدث خطأ في إضافة الوكيل") };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// تسجيل الحضور — كان جدول attendance يُقرأ ويُعرض فقط، بلا أي واجهة
+// إدخال، رغم أن مسير الرواتب يحسب الغياب والوقت الإضافي منه.
+// ══════════════════════════════════════════════════════════════════
+const AttendanceSchema = z.object({
+  organizationId: z.string().uuid(),
+  employeeId:     z.string().uuid(),
+  workDate:       z.string().min(10),                        // YYYY-MM-DD
+  attendanceType: z.enum(["present","absent","half_day","remote"]),
+  checkIn:        optionalTextField(30),
+  checkOut:       optionalTextField(30),
+  overtimeHours:  z.number().min(0).max(24).optional(),
+});
+
+export async function recordAttendance(
+  formData: z.infer<typeof AttendanceSchema>, userId: string,
+): Promise<ActionResult<{ id:string }>> {
+  try {
+    const v = AttendanceSchema.safeParse(formData);
+    if (!v.success) return { success:false, error:v.error.errors[0].message };
+
+    const session = await requirePermission("hr", "create");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(v.data.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+    if (!(await assertOwnedByOrg(employees, v.data.employeeId, v.data.organizationId)))
+      return { success:false, error:"الوكيل غير موجود أو لا يتبع هذه المنظمة" };
+
+    const checkIn  = v.data.checkIn  ? new Date(v.data.checkIn)  : undefined;
+    const checkOut = v.data.checkOut ? new Date(v.data.checkOut) : undefined;
+    if (checkIn && Number.isNaN(checkIn.getTime())) return { success:false, error:"وقت الحضور غير صالح" };
+    if (checkOut && Number.isNaN(checkOut.getTime())) return { success:false, error:"وقت الانصراف غير صالح" };
+
+    const workedHours = checkIn && checkOut
+      ? Math.max(0, +((checkOut.getTime() - checkIn.getTime()) / 3_600_000).toFixed(2))
+      : undefined;
+
+    const values = {
+      organizationId: v.data.organizationId,
+      employeeId:     v.data.employeeId,
+      workDate:       v.data.workDate,
+      attendanceType: v.data.attendanceType,
+      checkIn,
+      checkOut,
+      workedHours:    workedHours != null ? String(workedHours) : undefined,
+      overtimeHours:  String(v.data.overtimeHours ?? 0),
+    };
+
+    // سجل واحد لكل وكيل/يوم — إعادة التسجيل تُحدّث السجل بدل تكديس صفوف
+    const existing = await db.select({ id: attendance.id }).from(attendance)
+      .where(and(
+        eq(attendance.employeeId, v.data.employeeId),
+        eq(attendance.workDate, v.data.workDate),
+      )).limit(1);
+
+    let recordId: string;
+    if (existing.length) {
+      recordId = existing[0].id;
+      await db.update(attendance)
+        .set({ ...values, updatedBy: userId, updatedAt: new Date() })
+        .where(eq(attendance.id, recordId));
+    } else {
+      const [row] = await db.insert(attendance).values({ ...values, createdBy: userId }).returning();
+      recordId = row.id;
+    }
+
+    await createAuditLog({
+      organizationId: v.data.organizationId, userId,
+      tableName:"attendance", recordId, action: existing.length ? "UPDATE" : "CREATE",
+      newValues:{ workDate: v.data.workDate, attendanceType: v.data.attendanceType, overtimeHours: v.data.overtimeHours ?? 0 },
+    });
+
+    revalidatePath(`/hr/employees/${v.data.employeeId}`);
+    return { success:true, data:{ id:recordId } };
+  } catch (e) {
+    return { success:false, error:errMsg(e, "حدث خطأ في تسجيل الحضور") };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// طلبات الإجازة — كانت تُعرض فقط بدون إمكانية تقديم أو اعتماد.
+// الحالة مُخزَّنة في baseColumns.status (submitted → approved/rejected).
+// ══════════════════════════════════════════════════════════════════
+const LeaveRequestSchema = z.object({
+  organizationId: z.string().uuid(),
+  employeeId:     z.string().uuid(),
+  leaveType:      z.enum(["annual","sick","maternity","paternity","unpaid","emergency"]),
+  startDate:      z.string(),
+  endDate:        z.string(),
+  reason:         optionalTextField(500),
+});
+
+export async function createLeaveRequest(
+  formData: z.infer<typeof LeaveRequestSchema>, userId: string,
+): Promise<ActionResult<{ id:string }>> {
+  try {
+    const v = LeaveRequestSchema.safeParse(formData);
+    if (!v.success) return { success:false, error:v.error.errors[0].message };
+
+    const session = await requirePermission("hr", "create");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(v.data.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+    if (!(await assertOwnedByOrg(employees, v.data.employeeId, v.data.organizationId)))
+      return { success:false, error:"الوكيل غير موجود أو لا يتبع هذه المنظمة" };
+
+    const startDate = new Date(v.data.startDate);
+    const endDate   = new Date(v.data.endDate);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()))
+      return { success:false, error:"تواريخ الإجازة غير صالحة" };
+    if (endDate < startDate) return { success:false, error:"تاريخ النهاية قبل تاريخ البداية" };
+
+    const totalDays = (endDate.getTime() - startDate.getTime()) / 86_400_000 + 1;
+
+    const [leave] = await db.insert(leaveRequests).values({
+      organizationId: v.data.organizationId,
+      employeeId:     v.data.employeeId,
+      leaveType:      v.data.leaveType,
+      startDate,
+      endDate,
+      totalDays:      String(totalDays),
+      reason:         v.data.reason || undefined,
+      status:         "submitted",
+      createdBy:      userId,
+    }).returning();
+
+    await createAuditLog({
+      organizationId: v.data.organizationId, userId,
+      tableName:"leave_requests", recordId:leave.id, action:"CREATE",
+      newValues:{ leaveType: v.data.leaveType, startDate: v.data.startDate, endDate: v.data.endDate, totalDays },
+    });
+
+    revalidatePath(`/hr/employees/${v.data.employeeId}`);
+    return { success:true, data:{ id:leave.id } };
+  } catch (e) {
+    return { success:false, error:errMsg(e, "حدث خطأ في تقديم طلب الإجازة") };
+  }
+}
+
+export async function setLeaveRequestDecision(
+  leaveRequestId: string,
+  organizationId: string,
+  userId: string,
+  decision: "approved" | "rejected",
+): Promise<ActionResult<void>> {
+  try {
+    const session = await requirePermission("hr", "approve");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const leave = await db.query.leaveRequests.findFirst({
+      where: and(eq(leaveRequests.id, leaveRequestId), eq(leaveRequests.organizationId, organizationId)),
+      columns: { id:true, employeeId:true, status:true },
+    });
+    if (!leave) return { success:false, error:"طلب الإجازة غير موجود أو لا يتبع هذه المنظمة" };
+    if (leave.status !== "submitted") return { success:false, error:"تمت معالجة هذا الطلب مسبقاً" };
+
+    await db.update(leaveRequests)
+      .set({
+        status: decision,
+        approvedBy: userId,
+        approvedAt: new Date(),
+        updatedBy:  userId,
+        updatedAt:  new Date(),
+      })
+      .where(eq(leaveRequests.id, leaveRequestId));
+
+    await createAuditLog({
+      organizationId, userId,
+      tableName:"leave_requests", recordId: leaveRequestId,
+      action: decision === "approved" ? "APPROVE" : "REJECT",
+      newValues:{ status: decision },
+    });
+
+    revalidatePath(`/hr/employees/${leave.employeeId}`);
+    return { success:true, data:undefined };
+  } catch (e) {
+    return { success:false, error:errMsg(e, "حدث خطأ في معالجة طلب الإجازة") };
+  }
 }
