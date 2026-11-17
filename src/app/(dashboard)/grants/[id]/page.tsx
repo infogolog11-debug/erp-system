@@ -1,6 +1,6 @@
 // src/app/(dashboard)/grants/[id]/page.tsx
 import { auth } from "@/auth";
-import { getUserPermission, canView } from "@/lib/permissions/service";
+import { getUserPermission, canView, canEdit, canApprove } from "@/lib/permissions/service";
 import { db } from "@/db";
 import { grants } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -85,9 +85,10 @@ export default async function GrantDetailPage({
           <GrantActions
             grantId={grant.id}
             status={grant.status}
-            role={session.user.role}
             userId={session.user.id}
             organizationId={orgId}
+            canEdit={canEdit(__perm)}
+            canApprove={canApprove(__perm)}
             locale={prefs.locale}
           />
         </div>

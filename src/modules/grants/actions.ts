@@ -1,15 +1,16 @@
 "use server";
 
 import { db } from "@/db";
-import { grants, grantBudgetLines, budgetAllocations } from "@/db/schema";
+import { grants, grantBudgetLines, budgetAllocations, users } from "@/db/schema";
 import { createAuditLog } from "@/core/audit/audit-trail";
-import { notify } from "@/core/notifications/notify";
+import { notify, notifyMany } from "@/core/notifications/notify";
 import { canTransition } from "@/core/state-machine/transitions";
 import { revalidatePath } from "next/cache";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { textField, optionalTextField } from "@/lib/security/sanitize";
 import { requirePermission, assertOrgMatches } from "@/lib/auth/guard";
+import { getUserPermission, canApprove } from "@/lib/permissions/service";
 
 // ─── Validation Schemas ───────────────────
 const CreateGrantSchema = z.object({
@@ -114,6 +115,149 @@ export async function approveGrant(
     }
 
     revalidatePath("/grants");
+    return { success:true, data:undefined };
+  } catch (e) {
+    console.error(e);
+    return { success:false, error:"حدث خطأ غير متوقع" };
+  }
+}
+
+// ─── Submit Grant (draft → submitted) ─────
+// كانت أزرار "إرسال للموافقة / رفض / إغلاق" في GrantActions.tsx بلا دوال خلفية
+// فعلياً، فتبقى كل منحة جديدة في حالة "draft" إلى الأبد ولا يمكن اعتمادها
+// (approveGrant تشترط submitted) وبالتالي لا تظهر في المحاسبة/التقارير/لوحة التحكم.
+export async function submitGrant(
+  grantId: string,
+  userId: string,
+  organizationId: string
+): Promise<ActionResult> {
+  try {
+    const session = await requirePermission("grants", "edit");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const existing = await db.query.grants.findFirst({ where: eq(grants.id, grantId) });
+    if (!existing || existing.organizationId !== organizationId)
+      return { success:false, error:"المنحة غير موجودة" };
+    if (!canTransition("grants", existing.status, "submitted"))
+      return { success:false, error:`لا يمكن الإرسال من حالة ${existing.status}` };
+
+    await db.update(grants)
+      .set({ status:"submitted", updatedBy:userId, updatedAt:new Date() })
+      .where(and(eq(grants.id, grantId), eq(grants.organizationId, organizationId)));
+
+    await createAuditLog({
+      organizationId, userId, tableName:"grants", recordId:grantId,
+      action:"UPDATE",
+      oldValues:{ status:existing.status },
+      newValues:{ status:"submitted" },
+    });
+
+    // إشعار كل من يملك صلاحية اعتماد المنح
+    const orgUsers = await db.query.users.findMany({ where: eq(users.organizationId, organizationId) });
+    const approverIds: string[] = [];
+    for (const u of orgUsers) {
+      const p = await getUserPermission(u.id, organizationId, "grants", u.role);
+      if (canApprove(p)) approverIds.push(u.id);
+    }
+    if (approverIds.length) {
+      await notifyMany(approverIds, {
+        organizationId,
+        title:"طلب اعتماد منحة",
+        titleAr:"طلب اعتماد منحة",
+        body:`المنحة ${existing.name} بانتظار الاعتماد`,
+        type:"info",
+        link:`/grants/${grantId}`,
+      });
+    }
+
+    revalidatePath("/grants");
+    revalidatePath(`/grants/${grantId}`);
+    return { success:true, data:undefined };
+  } catch (e) {
+    console.error(e);
+    return { success:false, error:"حدث خطأ غير متوقع" };
+  }
+}
+
+// ─── Reject Grant (submitted → rejected) ──
+export async function rejectGrant(
+  grantId: string,
+  userId: string,
+  organizationId: string
+): Promise<ActionResult> {
+  try {
+    const session = await requirePermission("grants", "approve");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const existing = await db.query.grants.findFirst({ where: eq(grants.id, grantId) });
+    if (!existing || existing.organizationId !== organizationId)
+      return { success:false, error:"المنحة غير موجودة" };
+    if (!canTransition("grants", existing.status, "rejected"))
+      return { success:false, error:`لا يمكن الرفض من حالة ${existing.status}` };
+
+    await db.update(grants)
+      .set({ status:"rejected", updatedBy:userId, updatedAt:new Date() })
+      .where(and(eq(grants.id, grantId), eq(grants.organizationId, organizationId)));
+
+    await createAuditLog({
+      organizationId, userId, tableName:"grants", recordId:grantId,
+      action:"REJECT",
+      oldValues:{ status:existing.status },
+      newValues:{ status:"rejected" },
+    });
+
+    if (existing.grantManagerId) {
+      await notify({
+        organizationId, userId:existing.grantManagerId,
+        title:"تم رفض المنحة",
+        titleAr:"تم رفض المنحة",
+        body:`تم رفض المنحة: ${existing.name}`,
+        type:"warning",
+        link:`/grants/${grantId}`,
+      });
+    }
+
+    revalidatePath("/grants");
+    revalidatePath(`/grants/${grantId}`);
+    return { success:true, data:undefined };
+  } catch (e) {
+    console.error(e);
+    return { success:false, error:"حدث خطأ غير متوقع" };
+  }
+}
+
+// ─── Close Grant (approved → done) ────────
+export async function closeGrant(
+  grantId: string,
+  userId: string,
+  organizationId: string
+): Promise<ActionResult> {
+  try {
+    const session = await requirePermission("grants", "edit");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const existing = await db.query.grants.findFirst({ where: eq(grants.id, grantId) });
+    if (!existing || existing.organizationId !== organizationId)
+      return { success:false, error:"المنحة غير موجودة" };
+    if (!canTransition("grants", existing.status, "done"))
+      return { success:false, error:`لا يمكن الإغلاق من حالة ${existing.status}` };
+
+    await db.update(grants)
+      .set({ status:"done", updatedBy:userId, updatedAt:new Date() })
+      .where(and(eq(grants.id, grantId), eq(grants.organizationId, organizationId)));
+
+    await createAuditLog({
+      organizationId, userId, tableName:"grants", recordId:grantId,
+      action:"UPDATE",
+      oldValues:{ status:existing.status },
+      newValues:{ status:"done" },
+    });
+
+    revalidatePath("/grants");
+    revalidatePath(`/grants/${grantId}`);
     return { success:true, data:undefined };
   } catch (e) {
     console.error(e);

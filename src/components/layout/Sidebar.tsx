@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { label:{ ar:"الشكاوى والتغذية الراجعة", en:"Complaints & Feedback" }, href:"/cfm", icon:"message-report", roles:["super_admin","admin","finance_manager","hr_manager","program_manager","viewer"] },
   { label:{ ar:"الخريطة الجغرافية", en:"GIS Map" }, href:"/reports/gis-map", icon:"map-pin", roles:["super_admin","admin","finance_manager","program_manager","viewer"] },
   { label:{ ar:"الموردون", en:"Vendors" },       href:"/vendors",       icon:"truck",         roles:["super_admin","admin","finance_manager","procurement_officer","program_manager","viewer"] },
+  { label:{ ar:"المناقصات", en:"Tenders" },      href:"/vendors/tenders", icon:"gavel",       roles:["super_admin","admin","finance_manager","procurement_officer","program_manager","viewer"] },
   { label:{ ar:"المشتريات", en:"Procurement" },      href:"/procurement",   icon:"shopping-cart", roles:["super_admin","admin","finance_manager","procurement_officer","program_manager","viewer"] },
   { label:{ ar:"الوكلاء (HR)", en:"Agents (HR)" },href:"/hr",            icon:"users",         roles:["super_admin","admin","hr_manager","finance_manager","program_manager","viewer"] },
   { label:{ ar:"المخزون", en:"Inventory" },        href:"/inventory",     icon:"package",       roles:["super_admin","admin","warehouse_manager","procurement_officer","program_manager","viewer"] },

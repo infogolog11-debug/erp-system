@@ -1,11 +1,12 @@
 import { auth }     from "@/auth";
 import { getUserPermission, canView, canEdit } from "@/lib/permissions/service";
 import { db }       from "@/db";
-import { tenders, tenderBids, bidEvaluationCriteria } from "@/db/schema";
+import { tenders, tenderBids, bidEvaluationCriteria, vendors, currencies } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import BidEvaluationPanel from "@/modules/vendors/components/BidEvaluationPanel";
 import BidCriteriaEditor from "@/modules/vendors/components/BidCriteriaEditor";
+import AddBidForm from "@/modules/vendors/components/AddBidForm";
 import ChatterBox    from "@/components/shared/ChatterBox";
 import { getRequestPreferences } from "@/lib/preferences";
 import type { AppLocale } from "@/lib/preferences";
@@ -32,6 +33,15 @@ export default async function TenderDetailPage({ params: paramsPromise }: { para
     where: eq(bidEvaluationCriteria.tenderId, tender.id),
     orderBy: (t,{asc}) => [asc(t.sortOrder)],
   });
+
+  const [orgVendors, orgCurrencies] = await Promise.all([
+    db.query.vendors.findMany({
+      where: eq(vendors.organizationId, orgId),
+      columns: { id:true, name:true, code:true },
+      orderBy: (v,{asc}) => [asc(v.name)],
+    }),
+    db.query.currencies.findMany({ where: eq(currencies.isActive, true) }),
+  ]);
 
   const STATUS_STYLE: Record<string,string> = {
     draft:    "text-[#4B5563]",
@@ -104,6 +114,16 @@ export default async function TenderDetailPage({ params: paramsPromise }: { para
 
         {/* ملخص جانبي */}
         <div className="space-y-5">
+          {permEdit && (
+            <AddBidForm
+              tenderId={tender.id}
+              organizationId={orgId}
+              userId={userId}
+              vendors={orgVendors}
+              currencies={orgCurrencies}
+              locale={prefs.locale}
+            />
+          )}
           {permEdit ? (
             <BidCriteriaEditor
               tenderId={tender.id}

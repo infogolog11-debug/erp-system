@@ -9,6 +9,7 @@ import {
   vendorRatings, vendors, vendorContacts,
   bidEvaluationCriteria, bidEvaluations, tenderBids,
   purchaseRequests, purchaseOrders, goodsReceiptNotes,
+  tenders,
 } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { textField, optionalTextField, sanitizeText } from "@/lib/security/sanitize";
@@ -414,5 +415,106 @@ export async function createVendor(
     return { success:true, data:{ id:vendor.id, code:vendor.code } };
   } catch (e) {
     return { success:false, error: errMsg(e, "حدث خطأ في إضافة المورد") };
+  }
+}
+
+// ─── إنشاء مناقصة ──────────────────────────────────────────────────────
+const CreateTenderSchema = z.object({
+  organizationId:     z.string().uuid(),
+  code:               textField(50, 1),
+  title:              textField(300, 1),
+  titleAr:            optionalTextField(300),
+  category:           textField(100, 1),
+  description:        optionalTextField(2000),
+  estimatedValue:     z.number().min(0).optional(),
+  currencyId:         z.string().uuid().optional(),
+  submissionDeadline: z.string().min(1),
+  openingDate:        z.string().optional(),
+});
+
+export async function createTender(
+  formData: z.infer<typeof CreateTenderSchema>, userId: string,
+): Promise<ActionResult<{ id:string; code:string }>> {
+  try {
+    const v = CreateTenderSchema.safeParse(formData);
+    if (!v.success) return { success:false, error:v.error.errors[0].message };
+
+    const session = await requirePermission("vendors", "create");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(v.data.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const duplicate = await db.select({ id: tenders.id }).from(tenders)
+      .where(and(eq(tenders.organizationId, v.data.organizationId), eq(tenders.code, v.data.code)))
+      .limit(1);
+    if (duplicate.length) return { success:false, error:"كود المناقصة مستخدم مسبقاً" };
+
+    const [tender] = await db.insert(tenders).values({
+      organizationId:     v.data.organizationId,
+      code:               v.data.code,
+      title:              v.data.title,
+      titleAr:            v.data.titleAr || undefined,
+      description:        v.data.description || undefined,
+      category:           v.data.category,
+      estimatedValue:     v.data.estimatedValue != null ? String(v.data.estimatedValue) : undefined,
+      currencyId:         v.data.currencyId || undefined,
+      submissionDeadline: v.data.submissionDeadline,
+      openingDate:        v.data.openingDate || undefined,
+      createdBy:          userId,
+    }).returning();
+
+    await createAuditLog({
+      organizationId: v.data.organizationId, userId,
+      tableName:"tenders", recordId:tender.id, action:"CREATE",
+      newValues:{ code:tender.code, title:tender.title },
+    });
+
+    revalidatePath("/vendors/tenders");
+    return { success:true, data:{ id:tender.id, code:tender.code } };
+  } catch (e) {
+    return { success:false, error: errMsg(e, "حدث خطأ في إنشاء المناقصة") };
+  }
+}
+
+// ─── إضافة عرض (bid) لمناقصة ───────────────────────────────────────────
+const AddTenderBidSchema = z.object({
+  tenderId:       z.string().uuid(),
+  vendorId:       z.string().uuid(),
+  bidAmount:      z.number().min(0),
+  currencyId:     z.string().uuid(),
+  organizationId: z.string().uuid(),
+});
+
+export async function addTenderBid(
+  params: z.infer<typeof AddTenderBidSchema>, userId: string,
+): Promise<ActionResult<{ id:string }>> {
+  try {
+    const v = AddTenderBidSchema.safeParse(params);
+    if (!v.success) return { success:false, error:v.error.errors[0].message };
+
+    const session = await requirePermission("vendors", "edit");
+    if (!session.ok) return { success:false, error:session.error };
+    if (!assertOrgMatches(v.data.organizationId, session)) return { success:false, error:"غير مصرَّح بالوصول لهذه المنظمة" };
+
+    const tender = await db.query.tenders.findFirst({ where: eq(tenders.id, v.data.tenderId) });
+    if (!tender || tender.organizationId !== v.data.organizationId) return { success:false, error:"المناقصة غير موجودة" };
+
+    const [bid] = await db.insert(tenderBids).values({
+      tenderId:       v.data.tenderId,
+      vendorId:       v.data.vendorId,
+      organizationId: v.data.organizationId,
+      bidAmount:      String(v.data.bidAmount),
+      currencyId:     v.data.currencyId,
+      createdBy:      userId,
+    }).returning();
+
+    await createAuditLog({
+      organizationId: v.data.organizationId, userId,
+      tableName:"tender_bids", recordId:bid.id, action:"CREATE",
+    });
+
+    revalidatePath(`/vendors/tenders/${v.data.tenderId}`);
+    return { success:true, data:{ id:bid.id } };
+  } catch (e) {
+    return { success:false, error: errMsg(e, "حدث خطأ في إضافة العرض") };
   }
 }
